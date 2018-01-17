@@ -20,10 +20,10 @@ dimensional point cloud.}
 \item{filter_values}{a list of two numeric vectors containing the values of the two
 filter functions in the point cloud.}
 
-\item{num_intervals_min}{an integer specifying the minimum value for the \code{num_intervals}
+\item{num_intervals_min}{a list of two integers specifying the minimum value for the \code{num_intervals}
 parameter of \code{mapper2D} to be used in the scan.}
 
-\item{num_intervals_max}{an integer specifying the maximum value for the \code{num_intervals}
+\item{num_intervals_max}{a list of two integers specifying the maximum value for the \code{num_intervals}
 parameter of \code{mapper2D} to be used in the scan.}
 
 \item{percent_overlap_min}{a number between 0 and 100 specifying the minimum value for the
@@ -63,4 +63,24 @@ A natural way to generate a nerve complex from a point cloud is to use the Mappe
 implemented in the package \code{TDAmapper}. The function \code{scan_mapper2D} asseses the
 significance of a feature in the nerve complexes that result across a region of the
 parameter space of Mapper.
+}
+\examples{
+library(RayleighSelection)
+# Load processed LFW dataset
+data("lfw_distances")
+data("lfw")
+
+# Compute reduced representation using Laplacian eigenmap
+library(dimRed)
+leim <- LaplacianEigenmaps()
+storage.mode(lfw) <- "double"
+emb <- leim@fun(as(t(lfw), "dimRedData"), leim@stdpars)
+
+# Evaluate the significance of the R score of the 6907th pixel accross a section of the
+# Mapper parameter space
+scan_mapper2D(as.data.frame(t(lfw[6907,])),
+              lfw_distances,
+              list(emb@data@data[,1], emb@data@data[,2]),
+              c(20,20), c(50,50), 10, 20, 50, 10)
+
 }

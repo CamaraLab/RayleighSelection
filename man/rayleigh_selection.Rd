@@ -35,3 +35,30 @@ respect to the combinatorial Laplace operator of the complex and comparing it wi
 the null distribution which results from reshufling the values of the function across
 the point cloud.
 }
+\examples{
+library(RayleighSelection)
+# Load processed LFW dataset
+data("lfw_distances")
+data("lfw")
+
+# Compute reduced representation using Laplacian eigenmap
+library(dimRed)
+leim <- LaplacianEigenmaps()
+storage.mode(lfw) <- "double"
+emb <- leim@fun(as(t(lfw), "dimRedData"), leim@stdpars)
+
+# Compute Mapper representation using the Laplacian eigenmap as an auxiliary function
+library(TDAmapper)
+m2 <- mapper2D(distance_matrix = lfw_distances,
+               filter_values = list(emb@data@data[,1], emb@data@data[,2]),
+               num_intervals = c(40,40),
+               percent_overlap = 30,
+               num_bins_when_clustering = 10);
+
+# Compute the nerve complex
+gg <- nerve_complex(m2$points_in_vertex)
+
+# Compute R score, p-value, and q-value for the first 5 pixels
+rayleigh_selection(gg, as.data.frame(lfw[1:5]))
+
+}

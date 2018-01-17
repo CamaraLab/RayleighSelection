@@ -21,6 +21,31 @@
 #' default is set to 10.
 #' @param spring.constant number specifying the value of the spring constant used in the
 #' force-directed layout. By default is set to 0.3.
+#' @examples
+#' library(RayleighSelection)
+#' # Load processed LFW dataset
+#' data("lfw_distances")
+#' data("lfw")
+#'
+#' # Compute reduced representation using Laplacian eigenmap
+#' library(dimRed)
+#' leim <- LaplacianEigenmaps()
+#' storage.mode(lfw) <- "double"
+#' emb <- leim@fun(as(t(lfw), "dimRedData"), leim@stdpars)
+#'
+#' # Compute Mapper representation using the Laplacian eigenmap as an auxiliary function
+#' library(TDAmapper)
+#' m2 <- mapper2D(distance_matrix = lfw_distances,
+#'                filter_values = list(emb@data@data[,1], emb@data@data[,2]),
+#'                num_intervals = c(40,40),
+#'                percent_overlap = 30,
+#'                num_bins_when_clustering = 10);
+#'
+#' # Compute the nerve complex
+#' gg <- nerve_complex(m2$points_in_vertex)
+#'
+#' # Plot the skeleton of the nerve complex colored by the intensity of the 1063rd pixel
+#' plot_skeleton(gg, k=as.numeric(lfw[1063,]), spring.constant = 5.0)
 #'
 #' @export
 #'

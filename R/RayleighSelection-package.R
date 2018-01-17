@@ -7,6 +7,7 @@
 #' @import parallel
 #' @import TDAmapper
 #' @import grid
+#' @import ggplot2
 
 # This is a wrapper of the function pushCpp() only used for internal purposes.
 push <- function(lo, g2, pushforward) {

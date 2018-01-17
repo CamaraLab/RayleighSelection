@@ -11,9 +11,9 @@
 #' dimensional point cloud.
 #' @param filter_values a list of two numeric vectors containing the values of the two
 #' filter functions in the point cloud.
-#' @param num_intervals_min an integer specifying the minimum value for the \code{num_intervals}
+#' @param num_intervals_min a list of two integers specifying the minimum value for the \code{num_intervals}
 #' parameter of \code{mapper2D} to be used in the scan.
-#' @param num_intervals_max an integer specifying the maximum value for the \code{num_intervals}
+#' @param num_intervals_max a list of two integers specifying the maximum value for the \code{num_intervals}
 #' parameter of \code{mapper2D} to be used in the scan.
 #' @param num_intervals_step an integer specifying the number of steps for the \code{num_intervals}
 #' parameter of \code{mapper2D} to be used in the scan. By default it is set to 10.
@@ -37,6 +37,24 @@
 #' feature \code{f} for each configuration of parameters of \code{mapper2D}. The distribution
 #' of p-values and Rayleigh quotient scores across the space of parameters of \code{mapper2D}
 #' are visualized as heatmaps.
+#' @examples
+#' library(RayleighSelection)
+#' # Load processed LFW dataset
+#' data("lfw_distances")
+#' data("lfw")
+#'
+#' # Compute reduced representation using Laplacian eigenmap
+#' library(dimRed)
+#' leim <- LaplacianEigenmaps()
+#' storage.mode(lfw) <- "double"
+#' emb <- leim@fun(as(t(lfw), "dimRedData"), leim@stdpars)
+#'
+#' # Evaluate the significance of the R score of the 6907th pixel accross a section of the
+#' # Mapper parameter space
+#' scan_mapper2D(as.data.frame(t(lfw[6907,])),
+#'               lfw_distances,
+#'               list(emb@data@data[,1], emb@data@data[,2]),
+#'               c(20,20), c(50,50), 10, 20, 50, 10)
 #'
 #' @export
 #'

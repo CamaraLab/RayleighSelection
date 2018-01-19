@@ -4,7 +4,8 @@
 \alias{rayleigh_selection}
 \title{Ranks features using Rayleigh quotients.}
 \usage{
-rayleigh_selection(g2, f, num_perms = 1000, seed = 10, num_cores = 1)
+rayleigh_selection(g2, f, shift = 0, num_perms = 1000, seed = 10,
+  num_cores = 1)
 }
 \arguments{
 \item{g2}{an object of the class \code{simplicial} containing the nerve complex.}
@@ -12,6 +13,10 @@ rayleigh_selection(g2, f, num_perms = 1000, seed = 10, num_cores = 1)
 \item{f}{a numeric vector or matrix specifying one or more functions with support on
 the set of points whose significance will be assesed in the simplicial complex. Each
 column corresponds to a point and each row specifies a different function.}
+
+\item{shift}{real number specifying a shift that is added to \code{f}. Shifts are useful to
+reduce the statistical power and rank very significant features without the need of using a
+too large number of permutations. By default is set to 0.}
 
 \item{num_perms}{number of permutations used to build the null distribution for each
 feature. By default is set to 1000.}
@@ -37,18 +42,19 @@ the point cloud.
 }
 \examples{
 library(RayleighSelection)
-# Load processed LFW dataset
-data("lfw_distances")
+# Load pre-processed LFW dataset (aligned, cropped, and normalized)
 data("lfw")
 
-# Compute reduced representation using Laplacian eigenmap
+# Compute reduced representation using Laplacian eigenmap of pixels with high variance
 library(dimRed)
 leim <- LaplacianEigenmaps()
-storage.mode(lfw) <- "double"
-emb <- leim@fun(as(t(lfw), "dimRedData"), leim@stdpars)
+lfw_top <- lfw[apply(lfw, 1, var) > 0.9,]
+emb <- leim@fun(as(t(lfw_top), "dimRedData"), leim@stdpars)
 
-# Compute Mapper representation using the Laplacian eigenmap as an auxiliary function
+# Compute Mapper representation using the Laplacian eigenmap as an auxiliary function and correlation
+# distance as metric
 library(TDAmapper)
+lfw_distances <- (1.0 - cor(lfw_top))
 m2 <- mapper2D(distance_matrix = lfw_distances,
                filter_values = list(emb@data@data[,1], emb@data@data[,2]),
                num_intervals = c(40,40),
@@ -59,6 +65,6 @@ m2 <- mapper2D(distance_matrix = lfw_distances,
 gg <- nerve_complex(m2$points_in_vertex)
 
 # Compute R score, p-value, and q-value for the first 5 pixels
-rayleigh_selection(gg, as.data.frame(lfw[1:5]))
+rayleigh_selection(gg, lfw[1:5,], shift=10.0)
 
 }

@@ -21,18 +21,19 @@ complex. The output is a simplicial complex that can be used by other functions 
 }
 \examples{
 library(RayleighSelection)
-# Load processed LFW dataset
-data("lfw_distances")
+# Load pre-processed LFW dataset (aligned, cropped, and normalized)
 data("lfw")
 
-# Compute reduced representation using Laplacian eigenmap
+# Compute reduced representation using Laplacian eigenmap of pixels with high variance
 library(dimRed)
 leim <- LaplacianEigenmaps()
-storage.mode(lfw) <- "double"
-emb <- leim@fun(as(t(lfw), "dimRedData"), leim@stdpars)
+lfw_top <- lfw[apply(lfw, 1, var) > 0.9,]
+emb <- leim@fun(as(t(lfw_top), "dimRedData"), leim@stdpars)
 
-# Compute Mapper representation using the Laplacian eigenmap as an auxiliary function
+# Compute Mapper representation using the Laplacian eigenmap as an auxiliary function and correlation
+# distance as metric
 library(TDAmapper)
+lfw_distances <- (1.0 - cor(lfw_top))
 m2 <- mapper2D(distance_matrix = lfw_distances,
                filter_values = list(emb@data@data[,1], emb@data@data[,2]),
                num_intervals = c(40,40),
@@ -43,6 +44,6 @@ m2 <- mapper2D(distance_matrix = lfw_distances,
 gg <- nerve_complex(m2$points_in_vertex)
 
 # Plot the skeleton of the nerve complex colored by the intensity of the 1063rd pixel
-plot_skeleton(gg, k=as.numeric(lfw[1063,]), spring.constant = 5.0)
+plot_skeleton(gg, k=as.numeric(lfw[1063,]), spring.constant = 3.0, seed = 3)
 
 }

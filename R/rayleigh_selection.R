@@ -11,6 +11,9 @@
 #' @param f a numeric vector or matrix specifying one or more functions with support on
 #' the set of points whose significance will be assesed in the simplicial complex. Each
 #' column corresponds to a point and each row specifies a different function.
+#' @param shift real number specifying a shift that is added to \code{f}. Shifts are useful to
+#' reduce the statistical power and rank very significant features without the need of using a
+#' too large number of permutations. By default is set to 0.
 #' @param num_perms number of permutations used to build the null distribution for each
 #' feature. By default is set to 1000.
 #' @param seed integer specifying the seed used to initialize the generator of permutations.
@@ -23,18 +26,19 @@
 #' feature.
 #' @examples
 #' library(RayleighSelection)
-#' # Load processed LFW dataset
-#' data("lfw_distances")
+#' # Load pre-processed LFW dataset (aligned, cropped, and normalized)
 #' data("lfw")
 #'
-#' # Compute reduced representation using Laplacian eigenmap
+#' # Compute reduced representation using Laplacian eigenmap of pixels with high variance
 #' library(dimRed)
 #' leim <- LaplacianEigenmaps()
-#' storage.mode(lfw) <- "double"
-#' emb <- leim@fun(as(t(lfw), "dimRedData"), leim@stdpars)
+#' lfw_top <- lfw[apply(lfw, 1, var) > 0.9,]
+#' emb <- leim@fun(as(t(lfw_top), "dimRedData"), leim@stdpars)
 #'
-#' # Compute Mapper representation using the Laplacian eigenmap as an auxiliary function
+#' # Compute Mapper representation using the Laplacian eigenmap as an auxiliary function and correlation
+#' # distance as metric
 #' library(TDAmapper)
+#' lfw_distances <- (1.0 - cor(lfw_top))
 #' m2 <- mapper2D(distance_matrix = lfw_distances,
 #'                filter_values = list(emb@data@data[,1], emb@data@data[,2]),
 #'                num_intervals = c(40,40),
@@ -45,11 +49,11 @@
 #' gg <- nerve_complex(m2$points_in_vertex)
 #'
 #' # Compute R score, p-value, and q-value for the first 5 pixels
-#' rayleigh_selection(gg, as.data.frame(lfw[1:5]))
+#' rayleigh_selection(gg, lfw[1:5,], shift=10.0)
 #'
 #' @export
 #'
-rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1) {
+rayleigh_selection <- function(g2, f, shift = 0.0, num_perms = 1000, seed = 10, num_cores = 1) {
   # Degree matrix
   dd <- rowSums(g2$adjacency)
 
@@ -79,7 +83,7 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
     return(data.frame(qh, row.names = row.names(fu)))
   }
   if (num_cores == 1 || nrow(f) == 1) {
-    qqh <- worker(f)
+    qqh <- worker(f+shift)
   } else {
     # If more than one core then split the features in num_cores parts accordingly
     wv <- floor(nrow(f)/num_cores)
@@ -87,14 +91,14 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
     work <- list()
     if (wr>0) {
       for (m in 1:wr) {
-        work[[m]] <- f[(1+(m-1)*(wv+1)):(m*(wv+1)),]
+        work[[m]] <- (f[(1+(m-1)*(wv+1)):(m*(wv+1)),] + shift)
       }
       for (m in (wr+1):num_cores) {
-        work[[m]] <- f[(1+wr+(m-1)*wv):(wr+m*wv),]
+        work[[m]] <- (f[(1+wr+(m-1)*wv):(wr+m*wv),] + shift)
       }
     } else {
       for (m in 1:num_cores) {
-        work[[m]] <- f[(1+(m-1)*wv):(m*wv),]
+        work[[m]] <- (f[(1+(m-1)*wv):(m*wv),] + shift)
       }
     }
     reul <- mclapply(work, worker, mc.cores = num_cores)

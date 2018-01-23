@@ -1,10 +1,10 @@
 library(magick)
 
-pixels = list()
+lfw <- data.frame(rep(NA, 100*100))
+lfw_attributes <- read.table('lfw_attributes.txt', header = TRUE, sep = '\t', skip = 1)
+trim_attributes <- rep(FALSE, dim(lfw_attributes)[1])
 
 people <- list.files('LFW/lfw2', full.names = TRUE)
-
-save_images = FALSE
 
 for(person in people)
 {
@@ -12,33 +12,36 @@ for(person in people)
 
     if (length(images) < 20) next
 
+    i <- 1
+    name <- strsplit(person, '/')[[1]][3]
+    attrib_name<- gsub("_", " ", name)
+
     for (image in images)
     {
+
         img <- image_read(image)
         img <- image_crop(img, "100x100+150+150")
+        img <- as.integer(img[[1]])
+        dim(img) <- NULL
 
-        pixels <- cbind(pixels, as.integer(img[[1]]))
+        label <- paste(name, i, sep = '.')
+        lfw[label] <- img
 
-        if (save_images)
+        attrib <- (lfw_attributes['person'] == attrib_name &
+                   lfw_attributes['imagenum'] == i)
+        trim_attributes <- trim_attributes | attrib
+
+        if(!any(attrib))
         {
-            pth <- strsplit(image, '/')[[1]]
-            person <- pth[[3]]
-            image <- pth[[4]]
-
-            pth <- file.path('cropped_images', person)
-
-            if (!dir.exists(pth)) dir.create(pth, recursive = TRUE)
-
-            pth <- file.path(pth, image)
-
-            image_write(img, path = pth)
+            print(label)
         }
+
+        i <- i + 1
     }
 }
 
-lfw <- as.matrix(pixels, nrows = 100*100)
+lfw <- Filter(function(x)!all(is.na(x)), lfw)
 save(lfw, file = "lfw.RData")
 
-image_distances <- dist(t(lfw))
-image_distances <- as.matrix(image_distances)
-save(image_distances, file = "image_distances.RData")
+lfw_attributes <- lfw_attributes[trim_attributes, ]
+save(lfw_attributes, file = "lfw_attributes.RData")

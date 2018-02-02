@@ -37,11 +37,18 @@
 #'
 #' @export
 #'
-nerve_complex <- function(open_cover) {
+nerve_complex <- function(open_cover, weight = TRUE) {
   # Builds adjacency matrix and igraph object
-  adjacency <- Matrix(adjacencyCpp(open_cover), sparse = TRUE)
+  adjacency <- Matrix(adjacencyCpp(open_cover, weight), sparse = TRUE)
+
   diag(adjacency)<-1
-  g2 <- graph.adjacency(adjacency, mode="undirected")
+
+  if (!weight)
+  {
+      weight <- 'NULL'
+  }
+
+  g2 <- graph.adjacency(adjacency, mode="undirected", weighted=weight)
 
   # Prunes vertices that only one element and simplifies the graph
   kal <- which(lapply(open_cover, length) %in% 1)

@@ -6,6 +6,7 @@
 #'
 #' @param open_cover a list of open sets with \code{open_cover[[i]]} a vector of indices of points
 #' corresponding to the \code{i}-th open set in the open cover.
+#' @param weight specificies whether to weight 1-simplicies by Jaccard distance
 #' @return An object of the class \code{simplicial}. The class \code{simplicial} inherits from
 #' the class \code{igraph}.
 #' @examples

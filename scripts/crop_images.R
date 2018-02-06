@@ -24,9 +24,6 @@ for(person in people)
         img <- as.integer(img[[1]])
         dim(img) <- NULL
 
-        label <- paste(name, i, sep = '.')
-        lfw[label] <- img
-
         attrib <- (lfw_attributes['person'] == attrib_name &
                    lfw_attributes['imagenum'] == i)
         trim_attributes <- trim_attributes | attrib
@@ -34,6 +31,11 @@ for(person in people)
         if(!any(attrib))
         {
             print(label)
+        }
+        else
+        {
+            label <- paste(name, i, sep = '.')
+            lfw[label] <- img
         }
 
         i <- i + 1
@@ -44,4 +46,7 @@ lfw <- Filter(function(x)!all(is.na(x)), lfw)
 save(lfw, file = "lfw.RData")
 
 lfw_attributes <- lfw_attributes[trim_attributes, ]
+row.names(lfw_attributes) <- paste(lfw_attributes$person, lfw_attributes$imagenum, sep='.')
+lfw_attributes$person <- NULL
+lfw_attributes$imagenum <- NULL
 save(lfw_attributes, file = "lfw_attributes.RData")

@@ -46,6 +46,7 @@ lfw <- Filter(function(x)!all(is.na(x)), lfw)
 save(lfw, file = "lfw.RData")
 
 lfw_attributes <- lfw_attributes[trim_attributes, ]
+lfw_attributes$person <- gsub(" ", "_", lfw_attributes$person)
 row.names(lfw_attributes) <- paste(lfw_attributes$person, lfw_attributes$imagenum, sep='.')
 lfw_attributes$person <- NULL
 lfw_attributes$imagenum <- NULL

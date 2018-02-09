@@ -25,6 +25,7 @@
 #' parameter of \code{mapper2D} to be used in the scan. By default it is set to 10.
 #' @param num_bins_when_clustering a positive integer specifying the value of the \code{num_bins_when_clustering}
 #' parameter of \code{mapper2D} to be used in the scan. By default it is set to 10.
+#' @param weight specificies whether to weight 1-simplicies by Jaccard distance
 #' @param shift real number specifying a shift that is added to \code{f}. Shifts are useful to
 #' reduce the statistical power and rank very significant features without the need of using a
 #' too large number of permutations. By default is set to 0.
@@ -66,7 +67,7 @@
 scan_mapper2D <- function(f, distance_matrix, filter_values, num_intervals_min,
                           num_intervals_max, num_intervals_steps = 10, percent_overlap_min,
                           percent_overlap_max, percent_overlap_steps = 10,
-                          num_bins_when_clustering = 10, shift = 0.0, num_perms = 1000,
+                          num_bins_when_clustering = 10, weight = TRUE, shift = 0.0, num_perms = 1000,
                           seed = 10, num_cores = 1, significance_threshold = 0.05) {
   yy <- seq(percent_overlap_min, percent_overlap_max, length.out = percent_overlap_steps)
   xx1 <- seq(num_intervals_min[1], num_intervals_max[1], length.out = num_intervals_steps)
@@ -86,7 +87,7 @@ scan_mapper2D <- function(f, distance_matrix, filter_values, num_intervals_min,
     for (percen in yy) {
       # We use sink to avoid the verbosity of mapper2D. There must be better ways to do this.
       {sink("/dev/null"); m2 <- mapper2D(distance_matrix = distance_matrix, filter_values = filter_values, num_intervals = round(r[,m]), percent_overlap = percen, num_bins_when_clustering = num_bins_when_clustering); sink();}
-      gg <- nerve_complex(m2$points_in_vertex)
+      gg <- nerve_complex(m2$points_in_vertex, weight = weight)
       pr <- rayleigh_selection(gg, f, shift = shift, num_perms = num_perms)
       th$p <- c(th$p, pr$p)
       th$q <- c(th$q, pr$q)

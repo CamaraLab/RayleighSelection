@@ -1,7 +1,5 @@
 library(clue)
-library(devtools)
-
-load_all("../")
+library(infotheo)
 
 data("lfw")
 data("lfw_results")
@@ -11,7 +9,7 @@ sorted_results <- lfw_results[order(-lfw_results$p),]
 # assign images in lfw to clusters each image from the same person is in one cluster:
 # ie:         Alejandro_Toledo.1           Alejandro_Toledo.2
 #                          1                            1       ...
-#            Alvaro_Uribe.1               Alvaro_Uribe.2
+#                 Alvaro_Uribe.1               Alvaro_Uribe.2
 #                          2                            2
 people <- strsplit(colnames(lfw), '\\.')
 people <- unlist(people)
@@ -29,9 +27,6 @@ for (idx in seq(lfw_names))
 }
 
 benchmark_lfw <- function(q, r) {
-  q <- 100
-  r <- 1
-
   top_q_pixels <- sorted_results[1:q, ]
   pixel_indices <- as.numeric(row.names(top_q_pixels))
   pixels <- data.frame(lfw[pixel_indices[1], ])
@@ -41,13 +36,19 @@ benchmark_lfw <- function(q, r) {
     pixels[nrow(pixels) + 1,] <- lfw[index,]
   }
 
+  results <-  data.frame(ac=double(), mi=double())
+
   for (rep in 1:r)
   {
-    km <- kmeans(t(pixels), 62, iter.max = 100)
+    km <- kmeans(t(pixels), 62, iter.max = sample(10:100, 1))
 
+    ac <- accuracy(km$cluster, lfw_labels)
+    mi <- natstobits(mutinformation(km$cluster, lfw_labels)/max(entropy(km$cluster), entropy(lfw_labels)))
+
+    results[rep, ] <- c(ac, mi)
   }
 
-  return (accuracy(km$cluster, lfw_labels))
+  return (results)
 }
 
 # eq 6 from He, Cai, Niyogi paper Laplacian Score for Feature Selection

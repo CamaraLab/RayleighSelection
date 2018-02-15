@@ -4,7 +4,7 @@ library(infotheo)
 data("lfw")
 data("lfw_results")
 
-sorted_results <- lfw_results[order(lfw_results$p),]
+sorted_results <- lfw_results_weighted[order(lfw_results_weighted$p),]
 
 # assign images in lfw to clusters each image from the same person is in one cluster:
 # ie:         Alejandro_Toledo.1           Alejandro_Toledo.2
@@ -26,10 +26,15 @@ for (idx in seq(lfw_names))
   lfw_labels[idx] <- clusters[name[[1]][1]]
 }
 
-benchmark_lfw <- function(q, r) {
+
+benchmark_lfw <- function(q, r, perplexity = 10) {
   top_q_pixels <- sorted_results[1:q, ]
   pixel_indices <- as.numeric(row.names(top_q_pixels))
   pixels <- data.frame(lfw[pixel_indices, ])
+
+  set.seed(1)
+  tSNE <- Rtsne::Rtsne(t(pixels), perplexity=perplexity)
+  plot(tSNE$Y, col=as.numeric(lfw_labels), pch=16, cex = 0.5)
 
   results <-  data.frame(ac=double(), mi=double())
 
@@ -87,3 +92,4 @@ minWeightBipartiteMatching <- function(clusteringA, clusteringB) {
     attr(result, "assignmentMatrix") <- assignmentMatrix
     return(result)
 }
+

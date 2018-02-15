@@ -4,7 +4,7 @@ library(infotheo)
 data("lfw")
 data("lfw_results")
 
-sorted_results <- lfw_results[order(-lfw_results$p),]
+sorted_results <- lfw_results[order(lfw_results$p),]
 
 # assign images in lfw to clusters each image from the same person is in one cluster:
 # ie:         Alejandro_Toledo.1           Alejandro_Toledo.2
@@ -23,24 +23,19 @@ lfw_names <- colnames(lfw)
 for (idx in seq(lfw_names))
 {
   name <- strsplit(lfw_names[[idx]], '\\.')
-  lfw_labels[idx] <- clusters[name[[1]]]
+  lfw_labels[idx] <- clusters[name[[1]][1]]
 }
 
 benchmark_lfw <- function(q, r) {
   top_q_pixels <- sorted_results[1:q, ]
   pixel_indices <- as.numeric(row.names(top_q_pixels))
-  pixels <- data.frame(lfw[pixel_indices[1], ])
-
-  for (index in tail(pixel_indices, -1))
-  {
-    pixels[nrow(pixels) + 1,] <- lfw[index,]
-  }
+  pixels <- data.frame(lfw[pixel_indices, ])
 
   results <-  data.frame(ac=double(), mi=double())
 
   for (rep in 1:r)
   {
-    km <- kmeans(t(pixels), 62, iter.max = sample(10:100, 1))
+    km <- kmeans(t(pixels), length(people), iter.max = 100)
 
     ac <- accuracy(km$cluster, lfw_labels)
     mi <- natstobits(mutinformation(km$cluster, lfw_labels)/max(entropy(km$cluster), entropy(lfw_labels)))
@@ -54,20 +49,7 @@ benchmark_lfw <- function(q, r) {
 # eq 6 from He, Cai, Niyogi paper Laplacian Score for Feature Selection
 accuracy <- function(clusterA, clusterB) {
   map <- minWeightBipartiteMatching(clusterA, clusterB)
-
-  nom <- 0
-
-  for (i in seq(clusterB))
-  {
-    si <- clusterB[i]
-    ri <- clusterA[i]
-
-    if (si == map[ri])
-    {
-      nom <- nom + 1
-    }
-  }
-
+  nom <- sum(clusterA == map[clusterB])
   return (nom/length(clusterB))
 }
 

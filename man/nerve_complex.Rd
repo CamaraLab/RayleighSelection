@@ -10,7 +10,7 @@ nerve_complex(open_cover, weight = TRUE)
 \item{open_cover}{a list of open sets with \code{open_cover[[i]]} a vector of indices of points
 corresponding to the \code{i}-th open set in the open cover.}
 
-\item{weight}{Specifices whether to weight 1-simplicies by Jaccard distance}
+\item{weight}{specificies whether to weight 1-simplicies by Jaccard distance}
 }
 \value{
 An object of the class \code{simplicial}. The class \code{simplicial} inherits from
@@ -23,29 +23,29 @@ complex. The output is a simplicial complex that can be used by other functions 
 }
 \examples{
 library(RayleighSelection)
-# Load pre-processed LFW dataset (aligned, cropped, and normalized)
-data("lfw")
+# Load pre-processed MNIST test dataset
+data("mnist")
 
 # Compute reduced representation using Laplacian eigenmap of pixels with high variance
 library(dimRed)
 leim <- LaplacianEigenmaps()
-lfw_top <- lfw[apply(lfw, 1, var) > 0.9,]
-emb <- leim@fun(as(t(lfw_top), "dimRedData"), leim@stdpars)
+mnist_top <- mnist[apply(mnist, 1, var) > 10000,]
+emb <- leim@fun(as(t(mnist_top), "dimRedData"), leim@stdpars)
 
 # Compute Mapper representation using the Laplacian eigenmap as an auxiliary function and correlation
 # distance as metric
 library(TDAmapper)
-lfw_distances <- (1.0 - cor(lfw_top))
-m2 <- mapper2D(distance_matrix = lfw_distances,
+mnist_distances <- (1.0 - cor(mnist_top))
+m2 <- mapper2D(distance_matrix = mnist_distances,
                filter_values = list(emb@data@data[,1], emb@data@data[,2]),
-               num_intervals = c(40,40),
-               percent_overlap = 30,
+               num_intervals = c(50,50),
+               percent_overlap = 35,
                num_bins_when_clustering = 10);
 
 # Compute the nerve complex
 gg <- nerve_complex(m2$points_in_vertex)
 
-# Plot the skeleton of the nerve complex colored by the intensity of the 1063rd pixel
-plot_skeleton(gg, k=as.numeric(lfw[1063,]), spring.constant = 3.0, seed = 3)
+# Plot the skeleton of the nerve complex colored by the intensity of the 201st pixel
+plot_skeleton(gg, k=as.numeric(mnist[201,]), spring.constant = 5.0)
 
 }

@@ -1,49 +1,44 @@
 library(clue)
 library(infotheo)
 
-data("lfw")
-data("lfw_results")
+data("mnist")
+data("mnist_results_weighted")
 
-sorted_results <- lfw_results_weighted[order(lfw_results_weighted$p),]
+sorted_results <- mnist_results_weighted[order(mnist_results_weighted$p),]
 
-# assign images in lfw to clusters each image from the same person is in one cluster:
-# ie:         Alejandro_Toledo.1           Alejandro_Toledo.2
-#                          1                            1       ...
-#                 Alvaro_Uribe.1               Alvaro_Uribe.2
-#                          2                            2
-people <- strsplit(colnames(lfw), '\\.')
-people <- unlist(people)
-people <- unique(people[seq(1, length(people), 2)])
-clusters <- seq(1, length(people))
-names(clusters) <- people
+number <- strsplit(colnames(mnist), '\\.')
+number <- unlist(number)
+number <- unique(number[seq(1, length(number), 2)])
+clusters <- seq(1, length(number))
+names(clusters) <- number
 
-lfw_labels <- vector(mode = 'integer', length = length(lfw))
-names(lfw_labels) <- colnames(lfw)
-lfw_names <- colnames(lfw)
-for (idx in seq(lfw_names))
+mnist_labels <- vector(mode = 'integer', length = length(mnist))
+names(mnist_labels) <- colnames(mnist)
+mnist_names <- colnames(mnist)
+for (idx in seq(mnist_names))
 {
-  name <- strsplit(lfw_names[[idx]], '\\.')
-  lfw_labels[idx] <- clusters[name[[1]][1]]
+  name <- strsplit(mnist_names[[idx]], '\\.')
+  mnist_labels[idx] <- clusters[name[[1]][1]]
 }
 
 
-benchmark_lfw <- function(q, r, perplexity = 10) {
+benchmark_mnist <- function(q, r, perplexity = 10) {
   top_q_pixels <- sorted_results[1:q, ]
-  pixel_indices <- as.numeric(row.names(top_q_pixels))
-  pixels <- data.frame(lfw[pixel_indices, ])
+  pixel_indices <- as.numeric(substring(row.names(top_q_pixels),2))
+  pixels <- data.frame(mnist[pixel_indices, ])
 
   set.seed(1)
-  tSNE <- Rtsne::Rtsne(t(pixels), perplexity=perplexity)
-  plot(tSNE$Y, col=as.numeric(lfw_labels), pch=16, cex = 0.5)
+  #tSNE <- Rtsne::Rtsne(t(pixels), perplexity=perplexity)
+  #plot(tSNE$Y, col=as.numeric(mnist_labels), pch=16, cex = 0.5)
 
   results <-  data.frame(ac=double(), mi=double())
 
   for (rep in 1:r)
   {
-    km <- kmeans(t(pixels), length(people), iter.max = 100)
+    km <- kmeans(t(pixels), length(number), iter.max = 100)
 
-    ac <- accuracy(km$cluster, lfw_labels)
-    mi <- natstobits(mutinformation(km$cluster, lfw_labels)/max(entropy(km$cluster), entropy(lfw_labels)))
+    ac <- accuracy(km$cluster, mnist_labels)
+    mi <- natstobits(mutinformation(km$cluster, mnist_labels)/max(entropy(km$cluster), entropy(mnist_labels)))
 
     results[rep, ] <- c(ac, mi)
   }

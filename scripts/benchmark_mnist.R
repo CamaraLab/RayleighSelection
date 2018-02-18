@@ -1,35 +1,39 @@
 library(clue)
 library(infotheo)
 
-data("mnist")
 data("mnist_results_weighted")
 
 sorted_results <- mnist_results_weighted[order(mnist_results_weighted$p),]
 
-number <- strsplit(colnames(mnist), '\\.')
-number <- unlist(number)
-number <- unique(number[seq(1, length(number), 2)])
-clusters <- seq(1, length(number))
-names(clusters) <- number
-
-mnist_labels <- vector(mode = 'integer', length = length(mnist))
-names(mnist_labels) <- colnames(mnist)
-mnist_names <- colnames(mnist)
-for (idx in seq(mnist_names))
-{
-  name <- strsplit(mnist_names[[idx]], '\\.')
-  mnist_labels[idx] <- clusters[name[[1]][1]]
-}
 
 
-benchmark_mnist <- function(q, r, perplexity = 10) {
+benchmark_mnist <- function(sorted_results, q, r, tSNE = FALSE, perplexity = 10) {
+  data("mnist")
+
+  number <- strsplit(colnames(mnist), '\\.')
+  number <- unlist(number)
+  number <- unique(number[seq(1, length(number), 2)])
+  clusters <- seq(1, length(number))
+  names(clusters) <- number
+
+  mnist_labels <- vector(mode = 'integer', length = length(mnist))
+  names(mnist_labels) <- colnames(mnist)
+  mnist_names <- colnames(mnist)
+  for (idx in seq(mnist_names))
+  {
+    name <- strsplit(mnist_names[[idx]], '\\.')
+    mnist_labels[idx] <- clusters[name[[1]][1]]
+  }
+
   top_q_pixels <- sorted_results[1:q, ]
   pixel_indices <- as.numeric(substring(row.names(top_q_pixels),2))
   pixels <- data.frame(mnist[pixel_indices, ])
 
   set.seed(1)
-  #tSNE <- Rtsne::Rtsne(t(pixels), perplexity=perplexity)
-  #plot(tSNE$Y, col=as.numeric(mnist_labels), pch=16, cex = 0.5)
+  if (tSNE) {
+    tSNE <- Rtsne::Rtsne(t(pixels), perplexity=perplexity)
+    plot(tSNE$Y, col=as.numeric(mnist_labels), pch=16, cex = 0.5)
+  }
 
   results <-  data.frame(ac=double(), mi=double())
 
@@ -56,7 +60,6 @@ accuracy <- function(clusterA, clusterB) {
 # taken from: https://www.r-bloggers.com/matching-clustering-solutions-using-the-hungarian-method/
 # labels from cluster A will be matched on the labels from cluster B
 minWeightBipartiteMatching <- function(clusteringA, clusteringB) {
-    require(clue)
     idsA <- unique(clusteringA)  # distinct cluster ids in a
     idsB <- unique(clusteringB)  # distinct cluster ids in b
     nA <- length(clusteringA)  # number of instances in a

@@ -1,3 +1,5 @@
+library(ggplot2)
+library(parallel)
 library(clue)
 library(infotheo)
 
@@ -5,9 +7,7 @@ data("mnist_results_weighted")
 
 sorted_results <- mnist_results_weighted[order(mnist_results_weighted$p),]
 
-
-
-benchmark_mnist <- function(sorted_results, q, r, tSNE = FALSE, perplexity = 10) {
+benchmark_mnist <- function(sorted_results, q, r, tSNE = FALSE, perplexity = 10, num_cores = 4) {
   data("mnist")
 
   number <- strsplit(colnames(mnist), '\\.')
@@ -25,29 +25,50 @@ benchmark_mnist <- function(sorted_results, q, r, tSNE = FALSE, perplexity = 10)
     mnist_labels[idx] <- clusters[name[[1]][1]]
   }
 
-  top_q_pixels <- sorted_results[1:q, ]
-  pixel_indices <- as.numeric(substring(row.names(top_q_pixels),2))
-  pixels <- data.frame(mnist[pixel_indices, ])
+  bench <- function(q) {
+    top_q_pixels <- sorted_results[1:q, ]
+    pixel_indices <- as.numeric(substring(row.names(top_q_pixels),2))
+    pixels <- data.frame(mnist[pixel_indices, ])
 
-  set.seed(1)
-  if (tSNE) {
-    tSNE <- Rtsne::Rtsne(t(pixels), perplexity=perplexity)
-    plot(tSNE$Y, col=as.numeric(mnist_labels), pch=16, cex = 0.5)
+    set.seed(1)
+    if (tSNE) {
+      tSNE <- Rtsne::Rtsne(t(pixels), perplexity=perplexity)
+      plot(tSNE$Y, col=as.numeric(mnist_labels), pch=16, cex = 0.5)
+    }
+
+    results <-  data.frame(ac=double(), mi=double())
+
+    for (rep in 1:r)
+    {
+      km <- kmeans(t(pixels), length(number), iter.max = 100)
+
+      ac <- accuracy(km$cluster, mnist_labels)
+      mi <- natstobits(mutinformation(km$cluster, mnist_labels)/max(entropy(km$cluster), entropy(mnist_labels)))
+
+      results[rep, ] <- c(ac, mi)
+    }
+    return(results)
   }
 
-  results <-  data.frame(ac=double(), mi=double())
+  results <- mclapply(q, bench, mc.cores = num_cores)
+  ac <- lapply(results, "[[", 'ac')
+  ac <- matrix(unlist(ac), nrow=r, ncol=length(q), byrow=FALSE)
 
-  for (rep in 1:r)
-  {
-    km <- kmeans(t(pixels), length(number), iter.max = 100)
+  mi <- lapply(results, "[[", 'mi')
+  mi <- matrix(unlist(mi), nrow=r, ncol=length(q), byrow=FALSE)
 
-    ac <- accuracy(km$cluster, mnist_labels)
-    mi <- natstobits(mutinformation(km$cluster, mnist_labels)/max(entropy(km$cluster), entropy(mnist_labels)))
+  ac_mean <- colMeans(ac)
+  mi_mean <- colMeans(mi)
+  result <- data.frame(q, ac_mean, mi_mean)
 
-    results[rep, ] <- c(ac, mi)
-  }
+  ac_plot <- ggplot(data=result, aes(x=q, y=ac_mean, group=1)) + geom_line() + geom_point() +
+    ggtitle("Accuracy")
+  mi_plot <- ggplot(data=result, aes(x=q, y=mi_mean, group=2)) + geom_line() + geom_point() +
+    ggtitle("Mutual Information")
 
-  return (results)
+  multiplot(ac_plot, mi_plot, cols=2)
+
+  return(list(ac=ac, mi=mi))
 }
 
 # eq 6 from He, Cai, Niyogi paper Laplacian Score for Feature Selection

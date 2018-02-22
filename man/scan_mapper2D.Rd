@@ -7,8 +7,9 @@
 scan_mapper2D(f, distance_matrix, filter_values, num_intervals_min,
   num_intervals_max, num_intervals_steps = 10, percent_overlap_min,
   percent_overlap_max, percent_overlap_steps = 10,
-  num_bins_when_clustering = 10, shift = 0, num_perms = 1000, seed = 10,
-  num_cores = 1, significance_threshold = 0.05)
+  num_bins_when_clustering = 10, weight = TRUE, shift = 0,
+  num_perms = 1000, seed = 10, num_cores = 1,
+  significance_threshold = 0.05)
 }
 \arguments{
 \item{f}{a numeric vector specifying the function with support on the set of points
@@ -37,6 +38,8 @@ parameter of \code{mapper2D} to be used in the scan. By default it is set to 10.
 
 \item{num_bins_when_clustering}{a positive integer specifying the value of the \code{num_bins_when_clustering}
 parameter of \code{mapper2D} to be used in the scan. By default it is set to 10.}
+
+\item{weight}{specificies whether to weight 1-simplicies by Jaccard distance}
 
 \item{shift}{real number specifying a shift that is added to \code{f}. Shifts are useful to
 reduce the statistical power and rank very significant features without the need of using a
@@ -70,23 +73,23 @@ parameter space of Mapper.
 }
 \examples{
 library(RayleighSelection)
-# Load pre-processed LFW dataset (aligned, cropped, and normalized)
-data("lfw")
+# Load pre-processed MNIST test dataset
+data("mnist")
 
 # Compute reduced representation using Laplacian eigenmap of pixels with high variance
 library(dimRed)
 leim <- LaplacianEigenmaps()
-lfw_top <- lfw[apply(lfw, 1, var) > 0.9,]
+mnist_top <- mnist[apply(mnist, 1, var) > 10000,]
 emb <- leim@fun(as(t(lfw_top), "dimRedData"), leim@stdpars)
 
 # Compute correlation distance using pixels with high variance
-lfw_distances <- (1.0 - cor(lfw_top))
+mnist_distances <- (1.0 - cor(mnist_top))
 
-# Evaluate the significance of the R score of the 6907th pixel accross a section of the
+# Evaluate the significance of the R score of the 201th pixel accross a section of the
 # Mapper parameter space
-scan_mapper2D(lfw[6907,],
-              lfw_distances,
+scan_mapper2D(mnist[201,],
+              mnist_distances,
               list(emb@data@data[,1], emb@data@data[,2]),
-              c(20,20), c(50,50), 10, 20, 50, 10, shift = 10.0)
+              c(25,25), c(55,55), 10, 20, 50, 10)
 
 }

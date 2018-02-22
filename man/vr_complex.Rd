@@ -24,19 +24,18 @@ The output is a simplicial complex that can be used by other functions in the
 }
 \examples{
 library(RayleighSelection)
-# Load pre-processed LFW dataset (aligned, cropped, and normalized)
-data("lfw")
+# Load MNIST dataset
+data("mnist")
 
-# Compute a distance matrix for a subset of the LFW dataset using only pixels with high variance
-library(dimRed)
-lfw_test <- lfw[1:800,1:700]
-lfw_test_top <- lfw_test[apply(lfw_test, 1, var) > 0.9,]
-lfw_test_distances <- (1.0 - cor(lfw_test_top))
+# Compute a distance matrix for a subset of the MNIST dataset using only pixels with high variance
+mnist_test <- mnist[,1:800]
+mnist_test_top <- mnist_test[apply(mnist_test, 1, var) > 0.9,]
+mnist_test_distances <- (1.0 - cor(mnist_test_top))
 
 # Compute Vietoris-Rips complex at filtration distance 0.5 and weight parameter t = 5.0
-gg <- vr_complex(lfw_test_distances, 0.5, t=5.0)
+gg <- vr_complex(mnist_test_distances, 0.5, t=5.0)
 
 # Plot the skeleton of the Vietoris-Rips complex colored by the intensity of the 500th pixel
-plot_skeleton(gg, k=as.numeric(lfw_test[500,]), spring.constant = 0.02, seed = 3)
+plot_skeleton(gg, k=as.numeric(mnist_test[500,]), spring.constant = 0.02, seed = 3)
 
 }

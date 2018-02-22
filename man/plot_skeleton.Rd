@@ -5,7 +5,7 @@
 \title{Plots the 1-skeleton of a simplicial complex.}
 \usage{
 plot_skeleton(g2, r, g, b, k, pushforward = mean, seed = 10,
-  spring.constant = 0.3)
+  spring.constant = 0.3, file = "")
 }
 \arguments{
 \item{g2}{an object of the class \code{simplicial} containing the nerve complex.}
@@ -31,6 +31,8 @@ default is set to 10.}
 
 \item{spring.constant}{number specifying the value of the spring constant used in the
 force-directed layout. By default is set to 0.3.}
+
+\item{file}{if specified, exports the 1-skeleton to graphviz DOT \code{file}}
 }
 \description{
 Plots the 1-skeleton graph of a nerve complex and colors the vertices according

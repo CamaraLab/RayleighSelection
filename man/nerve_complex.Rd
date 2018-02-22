@@ -10,7 +10,7 @@ nerve_complex(open_cover, weight = TRUE)
 \item{open_cover}{a list of open sets with \code{open_cover[[i]]} a vector of indices of points
 corresponding to the \code{i}-th open set in the open cover.}
 
-\item{weight}{Specifices whether to weight 1-simplicies by Jaccard distance}
+\item{weight}{specificies whether to weight 1-simplicies by Jaccard distance}
 }
 \value{
 An object of the class \code{simplicial}. The class \code{simplicial} inherits from

@@ -11,15 +11,15 @@
 #' @param f a numeric vector or matrix specifying one or more functions with support on
 #' the set of points whose significance will be assesed in the simplicial complex. Each
 #' column corresponds to a point and each row specifies a different function.
-#' @param shift real number specifying a shift that is added to \code{f}. Shifts are useful to
-#' reduce the statistical power and rank very significant features without the need of using a
-#' too large number of permutations. By default is set to 0.
+#' @param shift real number specifying a shift that is added to \code{f}. By default is set to 0.
 #' @param num_perms number of permutations used to build the null distribution for each
 #' feature. By default is set to 1000.
 #' @param seed integer specifying the seed used to initialize the generator of permutations.
 #' By default is set to 10.
 #' @param num_cores integer specifying the number of cores to be used in the computation. By
 #' default only one core is used.
+#' @param adjacency when set to \code{TRUE} the adjacency matrix is used instead of the Laplacian,
+#' as in Rizvi, Camara, et al. Nat. Biotechnol. 35 (2017). By default is set to \code{FALSE}.
 #'
 #' @return Returns a data frame with the value of the Rayleigh quotient score, its p-values, and
 #' its value adjusted for multiple hypotheis testing using Benjamini-Hochberg procedure for each
@@ -53,17 +53,20 @@
 #'
 #' @export
 #'
-rayleigh_selection <- function(g2, f, shift = 0.0, num_perms = 1000, seed = 10, num_cores = 1) {
+rayleigh_selection <- function(g2, f, shift = 0.0, num_perms = 1000, seed = 10, num_cores = 1, adjacency = FALSE) {
   # Check class of f
   if (class(f) != 'data.frame') {
     f <- as.data.frame(f)
   }
 
-  # Degree matrix
-  dd <- rowSums(g2$adjacency)
-
-  # Scalar Laplace operator
-  col <- diag(dd)-g2$adjacency
+  if (adjacency) {
+    dd <- rep(1, sqrt(length(g2$adjacency)))
+    col <- -g2$adjacency
+  } else {
+    # Scalar Laplace operator
+    dd <- rowSums(g2$adjacency)
+    col <- diag(dd)-g2$adjacency
+  }
 
   # Evaluates R and p for a feature fo
   cornel <- function(fo) {

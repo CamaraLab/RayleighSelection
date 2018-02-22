@@ -5,7 +5,7 @@
 \title{Ranks features using Rayleigh quotients.}
 \usage{
 rayleigh_selection(g2, f, shift = 0, num_perms = 1000, seed = 10,
-  num_cores = 1)
+  num_cores = 1, adjacency = FALSE)
 }
 \arguments{
 \item{g2}{an object of the class \code{simplicial} containing the nerve complex.}
@@ -14,9 +14,7 @@ rayleigh_selection(g2, f, shift = 0, num_perms = 1000, seed = 10,
 the set of points whose significance will be assesed in the simplicial complex. Each
 column corresponds to a point and each row specifies a different function.}
 
-\item{shift}{real number specifying a shift that is added to \code{f}. Shifts are useful to
-reduce the statistical power and rank very significant features without the need of using a
-too large number of permutations. By default is set to 0.}
+\item{shift}{real number specifying a shift that is added to \code{f}. By default is set to 0.}
 
 \item{num_perms}{number of permutations used to build the null distribution for each
 feature. By default is set to 1000.}
@@ -26,6 +24,9 @@ By default is set to 10.}
 
 \item{num_cores}{integer specifying the number of cores to be used in the computation. By
 default only one core is used.}
+
+\item{adjacency}{when set to \code{TRUE} the adjacency matrix is used instead of the Laplacian,
+as in Rizvi, Camara, et al. Nat. Biotechnol. 35 (2017). By default is set to \code{FALSE}.}
 }
 \value{
 Returns a data frame with the value of the Rayleigh quotient score, its p-values, and

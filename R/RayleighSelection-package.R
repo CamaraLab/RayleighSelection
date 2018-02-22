@@ -8,6 +8,7 @@
 #' @import TDAmapper
 #' @import grid
 #' @import ggplot2
+#' @import ForceAtlas2
 
 # This is a wrapper of the function pushCpp() only used for internal purposes.
 push <- function(lo, g2, pushforward) {

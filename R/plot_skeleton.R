@@ -19,8 +19,8 @@
 #' \code{mean}. Other choices may slow down the computation substantially.
 #' @param seed integer specifying the seed used to initialize the force-directed layout. By
 #' default is set to 10.
-#' @param spring.constant number specifying the value of the spring constant used in the
-#' force-directed layout. By default is set to 0.3.
+#' @param iterations number of iterations used in the Force Atlas 2 layout. By default is set
+#' to 1500. A larger value may be required for optimal visualization of large graphs.
 #' @param file if specified, exports the 1-skeleton to graphviz DOT \code{file}
 #' @examples
 #' library(RayleighSelection)
@@ -47,11 +47,11 @@
 #' gg <- nerve_complex(m2$points_in_vertex)
 #'
 #' # Plot the skeleton of the nerve complex colored by the intensity of the 1063rd pixel
-#' plot_skeleton(gg, k=as.numeric(lfw[1063,]), spring.constant = 3.0, seed = 3)
+#' plot_skeleton(gg, k=as.numeric(lfw[1063,]))
 #'
 #' @export
 #'
-plot_skeleton <- function(g2, r, g, b, k, pushforward = mean, seed = 10, spring.constant = 0.3, file="") {
+plot_skeleton <- function(g2, r, g, b, k, pushforward = mean, seed = 10, iterations = 1500, file="") {
   set.seed(seed)
   if (!missing(k)) {
     k1 <- push(k, g2, pushforward)
@@ -62,7 +62,8 @@ plot_skeleton <- function(g2, r, g, b, k, pushforward = mean, seed = 10, spring.
     k3 <- push(b, g2, pushforward)
     V(g2)$color = rgb(1-(k2+k3)/2,1-(k1+k3)/2,1-(k1+k2)/2)
   }
-  plot(g2, layout = layout_with_graphopt(g2, spring.constant = spring.constant))
+
+  plot(g2, layout = layout.forceatlas2(g2, directed=FALSE, iterations=iterations, plotstep=0))
   if (file != "") {
     V(g2)$fillcolor <- V(g2)$color
     V(g2)$fixedsize <- TRUE

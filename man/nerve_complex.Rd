@@ -46,6 +46,6 @@ m2 <- mapper2D(distance_matrix = lfw_distances,
 gg <- nerve_complex(m2$points_in_vertex)
 
 # Plot the skeleton of the nerve complex colored by the intensity of the 1063rd pixel
-plot_skeleton(gg, k=as.numeric(lfw[1063,]), spring.constant = 3.0, seed = 3)
+plot_skeleton(gg, k=as.numeric(lfw[1063,]))
 
 }

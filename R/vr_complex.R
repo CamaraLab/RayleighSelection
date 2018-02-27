@@ -11,20 +11,19 @@
 #' the class \code{igraph}.
 #' @examples
 #' library(RayleighSelection)
-#' # Load pre-processed LFW dataset (aligned, cropped, and normalized)
-#' data("lfw")
+#' # Load MNIST dataset
+#' data("mnist")
 #'
-#' # Compute a distance matrix for a subset of the LFW dataset using only pixels with high variance
-#' library(dimRed)
-#' lfw_test <- lfw[1:800,1:700]
-#' lfw_test_top <- lfw_test[apply(lfw_test, 1, var) > 0.9,]
-#' lfw_test_distances <- (1.0 - cor(lfw_test_top))
+#' # Compute a distance matrix for a subset of the MNIST dataset using only pixels with high variance
+#' mnist_test <- mnist[,1:800]
+#' mnist_test_top <- mnist_test[apply(mnist_test, 1, var) > 0.9,]
+#' mnist_test_distances <- (1.0 - cor(mnist_test_top))
 #'
 #' # Compute Vietoris-Rips complex at filtration distance 0.5 and weight parameter t = 5.0
-#' gg <- vr_complex(lfw_test_distances, 0.5, t=5.0)
+#' gg <- vr_complex(mnist_test_distances, 0.5, t=5.0)
 #'
 #' # Plot the skeleton of the Vietoris-Rips complex colored by the intensity of the 500th pixel
-#' plot_skeleton(gg, k=as.numeric(lfw_test[500,]), spring.constant = 0.02, seed = 3)
+#' plot_skeleton(gg, k=as.numeric(mnist_test[500,]), spring.constant = 0.02, seed = 3)
 #'
 #' @export
 #'
@@ -34,18 +33,5 @@ vr_complex <- function(dist, epsilon, t = Inf)
   idx <- (dist <= epsilon)
   adjacency <- idx*dist
   adjacency <- exp(-adjacency**2/t)*idx
-  diag(adjacency) <- 0
-  g2 <- graph.adjacency(adjacency, mode='undirected', weighted=TRUE)
-
-  # Enriches the class with information about the open cover and adjacency matrix
-  g2$points_in_vertex <- seq(1, sqrt(length(lfw_test_distances)), 1)
-  g2$adjacency <- get.adjacency(g2, sparse = TRUE)
-
-  # Decorates the graph to include node sizes, color, etc.
-  V(g2)$size <- 4.0
-  V(g2)$label <- ""
-  V(g2)$frame.color <- "black"
-
-  class(g2) <-  c('simplicial', 'igraph')
-  return(g2)
+  return(graph_to_complex(adjacency))
 }

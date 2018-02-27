@@ -10,8 +10,8 @@ knn_complex <- function(dist, k, t = Inf)
 
   for (col in 1:k)
   {
-    adjacency[cbind(rows, col)] <- 1
-    adjacency[cbind(col, rows)] <- 1
+    adjacency[cbind(rows, id[,col])] <- 1
+    adjacency[cbind(id[,col], rows)] <- 1
   }
 
   adjacency <- exp(-dist**2/t)*adjacency

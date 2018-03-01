@@ -8,6 +8,7 @@
 #' @import TDAmapper
 #' @import grid
 #' @import ggplot2
+#' @import infotheo
 
 # This is a wrapper of the function pushCpp() only used for internal purposes.
 push <- function(lo, g2, pushforward) {

@@ -8,6 +8,7 @@
 #' @import TDAmapper
 #' @import grid
 #' @import ggplot2
+#' @import infotheo
 #' @import dbscan
 
 # This is a wrapper of the function pushCpp() only used for internal purposes.

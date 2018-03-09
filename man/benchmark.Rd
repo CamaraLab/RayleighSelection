@@ -15,7 +15,7 @@ in the evaluation. If a list of integers is specified, benchmarks are sequential
 the different values in the list.}
 
 \item{r}{an integer specifying the number of times the benchmark is repeated for each value of
-\core{q}. By default is set to 10.}
+\code{q}. By default is set to 10.}
 
 \item{num_cores}{number of cores used for the computation. By default is set to 1.}
 

@@ -76,6 +76,7 @@ rayleigh_selection <- function(g2, f, shift = 0.0, num_perms = 1000, seed = 10, 
       qt <- qlom
     } else {
       qt <- rowSums((kk%*%col)*kk)/qlom
+      qt[is.nan(qt)] <- 0
     }
     ph <- NULL
     ph$R <- qt[1]

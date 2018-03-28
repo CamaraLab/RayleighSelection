@@ -12,7 +12,7 @@
 #' \code{q}. By default is set to 10.
 #' @param num_cores number of cores used for the computation. By default is set to 1.
 #' @param dataset a string specifying the dataset used for the benchmark. Supported datasets are
-#' \code{gisette} (default), and \code{mnist}.
+#' \code{gisette} (default), \code{dexter}, and \code{mnist}.
 #'
 #' @return Returns a matrix with \code{r} rows and \code{q} columns containing the normalized mutual
 #' information estimated from the empirical probability distribution. In addition, the average mutual
@@ -32,12 +32,14 @@
 #' @export
 #'
 benchmark <- function(sorted_results, q, r = 10, num_cores = 1, dataset = "gisette") {
-  data(dataset)
   if (dataset == "mnist") {
     m <- mnist
   }
   else if (dataset == "gisette") {
     m <- gisette
+  }
+  else if (dataset == "dexter") {
+    m <- dexter
   }
   number <- strsplit(colnames(m), '\\.')
   number <- unlist(number)
@@ -56,7 +58,12 @@ benchmark <- function(sorted_results, q, r = 10, num_cores = 1, dataset = "giset
 
   bench <- function(q) {
     top_q_pixels <- sorted_results[1:q, ]
-    pixel_indices <- as.numeric(substring(row.names(top_q_pixels),2))
+    if (dataset == "dexter") {
+      pixel_indices <- as.numeric(row.names(top_q_pixels))
+    }
+    else {
+      pixel_indices <- as.numeric(substring(row.names(top_q_pixels),2))
+    }
     pixels <- data.frame(m[pixel_indices, ])
     results <-  data.frame(mi=double())
     for (rep in 1:r)

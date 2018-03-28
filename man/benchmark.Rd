@@ -20,7 +20,7 @@ the different values in the list.}
 \item{num_cores}{number of cores used for the computation. By default is set to 1.}
 
 \item{dataset}{a string specifying the dataset used for the benchmark. Supported datasets are
-\code{gisette} (default), and \code{mnist}.}
+\code{gisette} (default), \code{dexter}, and \code{mnist}.}
 }
 \value{
 Returns a matrix with \code{r} rows and \code{q} columns containing the normalized mutual

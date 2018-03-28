@@ -8,6 +8,7 @@
 #' @import TDAmapper
 #' @import grid
 #' @import ggplot2
+#' @import ForceAtlas2
 #' @import infotheo
 #' @import dbscan
 

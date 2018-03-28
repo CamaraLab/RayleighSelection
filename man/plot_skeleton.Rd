@@ -5,7 +5,7 @@
 \title{Plots the 1-skeleton of a simplicial complex.}
 \usage{
 plot_skeleton(g2, r, g, b, k, pushforward = mean, seed = 10,
-  spring.constant = 0.3)
+  iterations = 1500, file = "")
 }
 \arguments{
 \item{g2}{an object of the class \code{simplicial} containing the nerve complex.}
@@ -29,8 +29,10 @@ and \code{k} to functions with support on the simplices. By default is set to
 \item{seed}{integer specifying the seed used to initialize the force-directed layout. By
 default is set to 10.}
 
-\item{spring.constant}{number specifying the value of the spring constant used in the
-force-directed layout. By default is set to 0.3.}
+\item{iterations}{number of iterations used in the Force Atlas 2 layout. By default is set
+to 1500. A larger value may be required for optimal visualization of large graphs.}
+
+\item{file}{if specified, exports the 1-skeleton to graphviz DOT \code{file}}
 }
 \description{
 Plots the 1-skeleton graph of a nerve complex and colors the vertices according
@@ -63,6 +65,6 @@ m2 <- mapper2D(distance_matrix = mnist_distances,
 gg <- nerve_complex(m2$points_in_vertex)
 
 # Plot the skeleton of the nerve complex colored by the intensity of the 201st pixel
-plot_skeleton(gg, k=as.numeric(mnist[201,]), spring.constant = 5.0)
+plot_skeleton(gg, k=as.numeric(mnist[201,]))
 
 }

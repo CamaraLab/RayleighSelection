@@ -9,6 +9,8 @@
 #' @import grid
 #' @import ggplot2
 #' @import ForceAtlas2
+#' @import infotheo
+#' @import dbscan
 
 # This is a wrapper of the function pushCpp() only used for internal purposes.
 push <- function(lo, g2, pushforward) {

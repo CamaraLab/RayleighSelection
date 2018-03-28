@@ -11,62 +11,76 @@
 #' @param f a numeric vector or matrix specifying one or more functions with support on
 #' the set of points whose significance will be assesed in the simplicial complex. Each
 #' column corresponds to a point and each row specifies a different function.
-#' @param shift real number specifying a shift that is added to \code{f}. Shifts are useful to
-#' reduce the statistical power and rank very significant features without the need of using a
-#' too large number of permutations. By default is set to 0.
+#' @param shift real number specifying a shift that is added to \code{f}. By default is set to 0.
 #' @param num_perms number of permutations used to build the null distribution for each
 #' feature. By default is set to 1000.
 #' @param seed integer specifying the seed used to initialize the generator of permutations.
 #' By default is set to 10.
 #' @param num_cores integer specifying the number of cores to be used in the computation. By
 #' default only one core is used.
+#' @param adjacency when set to \code{TRUE} the adjacency matrix is used instead of the Laplacian,
+#' as in Rizvi, Camara, et al. Nat. Biotechnol. 35 (2017). By default is set to \code{FALSE}.
 #'
 #' @return Returns a data frame with the value of the Rayleigh quotient score, its p-values, and
 #' its value adjusted for multiple hypotheis testing using Benjamini-Hochberg procedure for each
 #' feature.
 #' @examples
 #' library(RayleighSelection)
-#' # Load pre-processed LFW dataset (aligned, cropped, and normalized)
-#' data("lfw")
+#' # Load pre-processed MNIST test dataset
+#' data("mnist")
 #'
 #' # Compute reduced representation using Laplacian eigenmap of pixels with high variance
 #' library(dimRed)
 #' leim <- LaplacianEigenmaps()
-#' lfw_top <- lfw[apply(lfw, 1, var) > 0.9,]
-#' emb <- leim@fun(as(t(lfw_top), "dimRedData"), leim@stdpars)
+#' mnist_top <- mnist[apply(mnist, 1, var) > 10000,]
+#' emb <- leim@fun(as(t(mnist_top), "dimRedData"), leim@stdpars)
 #'
 #' # Compute Mapper representation using the Laplacian eigenmap as an auxiliary function and correlation
 #' # distance as metric
 #' library(TDAmapper)
-#' lfw_distances <- (1.0 - cor(lfw_top))
-#' m2 <- mapper2D(distance_matrix = lfw_distances,
+#' mnist_distances <- (1.0 - cor(mnist_top))
+#' m2 <- mapper2D(distance_matrix = mnist_distances,
 #'                filter_values = list(emb@data@data[,1], emb@data@data[,2]),
-#'                num_intervals = c(40,40),
-#'                percent_overlap = 30,
+#'                num_intervals = c(50,50),
+#'                percent_overlap = 35,
 #'                num_bins_when_clustering = 10);
 #'
 #' # Compute the nerve complex
 #' gg <- nerve_complex(m2$points_in_vertex)
 #'
-#' # Compute R score, p-value, and q-value for the first 5 pixels
-#' rayleigh_selection(gg, lfw[1:5,], shift=10.0)
+#' # Compute R score, p-value, and q-value for the pixels 201st to 205th
+#' rayleigh_selection(gg, mnist[201:205,])
 #'
 #' @export
 #'
-rayleigh_selection <- function(g2, f, shift = 0.0, num_perms = 1000, seed = 10, num_cores = 1) {
-  # Degree matrix
-  dd <- rowSums(g2$adjacency)
+rayleigh_selection <- function(g2, f, shift = 0.0, num_perms = 1000, seed = 10, num_cores = 1, adjacency = FALSE) {
+  # Check class of f
+  if (class(f) != 'data.frame') {
+    f <- as.data.frame(f)
+  }
 
-  # Scalar Laplace operator
-  col <- diag(dd)-g2$adjacency
+  if (adjacency) {
+    dd <- rep(1, sqrt(length(g2$adjacency)))
+    col <- -g2$adjacency
+  } else {
+    # Scalar Laplace operator
+    dd <- rowSums(g2$adjacency)
+    col <- diag(dd)-g2$adjacency
+  }
 
   # Evaluates R and p for a feature fo
   cornel <- function(fo) {
     kk<-pushCpp(as.numeric(fo), g2$points_in_vertex, num_perms)
-    qt <- rowSums((kk%*%col)*kk)/rowSums(dd*kk^2)
+    qlom <- rowSums(dd*kk^2)
+    if (sum(abs(qlom))==0.0) {
+      qt <- qlom
+    } else {
+      qt <- rowSums((kk%*%col)*kk)/qlom
+      qt[is.nan(qt)] <- 0
+    }
     ph <- NULL
     ph$R <- qt[1]
-    ph$p <- sum(qt<qt[1])/num_perms
+    ph$p <- (sum(qt<=qt[1])-1.0)/num_perms
     return(ph)
   }
 

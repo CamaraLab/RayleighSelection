@@ -24,30 +24,30 @@
 #' @param file if specified, exports the 1-skeleton to graphviz DOT \code{file}
 #' @examples
 #' library(RayleighSelection)
-#' # Load pre-processed LFW dataset (aligned, cropped, and normalized)
-#' data("lfw")
+#' # Load pre-processed MNIST test dataset
+#' data("mnist")
 #'
 #' # Compute reduced representation using Laplacian eigenmap of pixels with high variance
 #' library(dimRed)
 #' leim <- LaplacianEigenmaps()
-#' lfw_top <- lfw[apply(lfw, 1, var) > 0.9,]
-#' emb <- leim@fun(as(t(lfw_top), "dimRedData"), leim@stdpars)
+#' mnist_top <- lfw[apply(mnist, 1, var) > 10000,]
+#' emb <- leim@fun(as(t(mnist_top), "dimRedData"), leim@stdpars)
 #'
 #' # Compute Mapper representation using the Laplacian eigenmap as an auxiliary function and correlation
 #' # distance as metric
 #' library(TDAmapper)
-#' lfw_distances <- (1.0 - cor(lfw_top))
-#' m2 <- mapper2D(distance_matrix = lfw_distances,
+#' mnist_distances <- (1.0 - cor(mnist_top))
+#' m2 <- mapper2D(distance_matrix = mnist_distances,
 #'                filter_values = list(emb@data@data[,1], emb@data@data[,2]),
-#'                num_intervals = c(40,40),
-#'                percent_overlap = 30,
+#'                num_intervals = c(50,50),
+#'                percent_overlap = 35,
 #'                num_bins_when_clustering = 10);
 #'
 #' # Compute the nerve complex
 #' gg <- nerve_complex(m2$points_in_vertex)
 #'
-#' # Plot the skeleton of the nerve complex colored by the intensity of the 1063rd pixel
-#' plot_skeleton(gg, k=as.numeric(lfw[1063,]))
+#' # Plot the skeleton of the nerve complex colored by the intensity of the 201st pixel
+#' plot_skeleton(gg, k=as.numeric(mnist[201,]))
 #'
 #' @export
 #'

@@ -7,14 +7,15 @@
 using namespace Rcpp;
 
 // adjacencyCpp
-arma::sp_mat adjacencyCpp(List x, bool weight);
-RcppExport SEXP _RayleighSelection_adjacencyCpp(SEXP xSEXP, SEXP weightSEXP) {
+List adjacencyCpp(List x, DataFrame& features, bool weight);
+RcppExport SEXP _RayleighSelection_adjacencyCpp(SEXP xSEXP, SEXP featuresSEXP, SEXP weightSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< List >::type x(xSEXP);
+    Rcpp::traits::input_parameter< DataFrame& >::type features(featuresSEXP);
     Rcpp::traits::input_parameter< bool >::type weight(weightSEXP);
-    rcpp_result_gen = Rcpp::wrap(adjacencyCpp(x, weight));
+    rcpp_result_gen = Rcpp::wrap(adjacencyCpp(x, features, weight));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -33,7 +34,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_RayleighSelection_adjacencyCpp", (DL_FUNC) &_RayleighSelection_adjacencyCpp, 2},
+    {"_RayleighSelection_adjacencyCpp", (DL_FUNC) &_RayleighSelection_adjacencyCpp, 3},
     {"_RayleighSelection_pushCpp", (DL_FUNC) &_RayleighSelection_pushCpp, 3},
     {NULL, NULL, 0}
 };

@@ -38,9 +38,10 @@
 #'
 #' @export
 #'
-nerve_complex <- function(open_cover, weight = TRUE) {
+nerve_complex <- function(open_cover, features, weight = TRUE) {
   # Builds adjacency matrix and igraph object
-  adjacency <- Matrix(adjacencyCpp(open_cover, weight), sparse = TRUE)
+  complex <- adjacencyCpp(open_cover, features, weight)
+  adjacency <- Matrix(complex$one_simplices, sparse = TRUE)
 
   diag(adjacency)<-1
 
@@ -49,7 +50,7 @@ nerve_complex <- function(open_cover, weight = TRUE) {
       weight <- 'NULL'
   }
 
-  g2 <- graph.adjacency(adjacency, mode="undirected", weighted=weight)
+  g2 <- graph.adjacency(adjacency, mode="directed", weighted=weight)
 
   # Prunes vertices that only one element and simplifies the graph
   kal <- which(lapply(open_cover, length) %in% 1)
@@ -67,6 +68,7 @@ nerve_complex <- function(open_cover, weight = TRUE) {
   # Enriches the class with information about the open cover and adjacency matrix
   g2$points_in_vertex <- open_cover
   g2$adjacency <- get.adjacency(g2, sparse = TRUE)
+  g2$two_simplices <- complex$two_simplices
   class(g2) <- c('simplicial', 'igraph')
   return(g2)
 }

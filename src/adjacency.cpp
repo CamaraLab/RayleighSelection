@@ -10,30 +10,21 @@ bool sortbysec(const std::pair<T, TT> &a, const std::pair<T, TT> &b)
 }
 
 // taken from: https://stackoverflow.com/questions/12991758/creating-all-possible-k-combinations-of-n-items-in-c
-template<typename T>
-std::vector<T> combo(const T& c, int k)
+std::vector<std::vector<int>> combo(int N, int K)
 {
-  std::vector<T> combos;
+  std::string bitmask(K, 1); // K leading 1's
+  bitmask.resize(N, 0); // N-K trailing 0's
+  std::vector<std::vector<int>> combos;
 
-  int n = c.size();
-  int combo = (1 << k) - 1;       // k bit sets
-  while (combo < 1<<n) {
-
-    T comb;
-    int n = c.size();
-    for (int i = 0; i < n; ++i) {
-      if ((combo >> i) & 1)
-        comb.push_back(c[i]);
+  // print integers and permute bitmask
+  do {
+    std::vector<int> combo;
+    for (int i = 0; i < N; ++i) // [0..N-1] integers
+    {
+      if (bitmask[i]) combo.push_back(i);
     }
-    combos.push_back(comb);
-
-    int x = combo & -combo;
-    int y = combo + x;
-    int z = (combo & ~y);
-    combo = z / x;
-    combo >>= 1;
-    combo |= y;
-  }
+    combos.push_back(combo);
+  } while (std::prev_permutation(bitmask.begin(), bitmask.end()));
 
   return combos;
 }
@@ -81,7 +72,8 @@ List adjacencyCpp(List x, DataFrame& features, bool weight) {
   List xlist(x);
   int n = xlist.size();
   arma::sp_mat one_simplices(n,n);
-  arma::cube two_simplices(n, n, n, arma::fill::zeros);
+  List two_simplices(n);
+  two_simplices.fill(arma::sp_mat(n, n));
 
   IntegerVector sample_order = features["sample"];
   std::map<int, double> sample_index_mean;
@@ -135,22 +127,25 @@ List adjacencyCpp(List x, DataFrame& features, bool weight) {
   // generate all possible two simplices and for each possible two simplex generate a list of its faces
   // check that its faces are contained in the adjacency matrix of one simplices, if so, compute the
   // triple intersection of the covers
-  std::vector<int> vertices(n);
-  std::iota(vertices.begin(), vertices.end(), 0);
-  std::vector<std::vector<int>> two_simplices_candidates = combo(vertices, 3);
+  std::vector<std::vector<int>> two_simplices_candidates = combo(n, 3);
+  std::vector<std::vector<int>> faces = combo(3, 2);
 
   for(auto&& it : two_simplices_candidates)
   {
-    std::vector<std::vector<int>> faces = combo(it, 2);
     bool contains_faces = true;
+
+    Rcout << "Two Simplex Candidate: " << it[0] << " " << it[1] << " " << it[2] << std::endl;
 
     for(auto&& itt : faces)
     {
-      if(one_simplices(itt[0], itt[1]) == 0 && one_simplices(itt[1], itt[0]) == 0)
+      Rcout << "\tChecking face: " << it[itt[0]] << " " << it[itt[1]];
+      if(one_simplices(it[itt[0]], it[itt[1]]) == 0 && one_simplices(it[itt[1]], it[itt[0]]) == 0)
       {
+        Rcout << " FALSE" << std::endl;
         contains_faces = false;
         break;
       }
+      Rcout << " TRUE" << std::endl;
     }
 
     if (!contains_faces)
@@ -167,6 +162,8 @@ List adjacencyCpp(List x, DataFrame& features, bool weight) {
 
     double intersection = (double)(intersect(intersect(cover0, cover1), cover2).size());
 
+    Rcout << "Cover Intersection: " << intersection << std::endl;
+
     if (intersection > 0)
     {
       double cover0_mean = find_index_mean(cover0, v0, sample_order, sample_index_mean);
@@ -179,7 +176,15 @@ List adjacencyCpp(List x, DataFrame& features, bool weight) {
       vertices.push_back(std::make_pair(v2, cover2_mean));
 
       sort(vertices.begin(), vertices.end(), sortbysec<int, double>);
-      two_simplices(vertices[0].first, vertices[1].first, vertices[2].first) = 1;
+
+      Rcout << "Inserting two simplex: "
+            << vertices[0].first << " "
+            << vertices[1].first << " "
+            << vertices[2].first << std::endl;
+
+      arma::sp_mat adjacency = two_simplices(vertices[0].first);
+      adjacency(vertices[1].first, vertices[2].first) = 1;
+      two_simplices(vertices[0].first) = adjacency;
     }
   }
 

@@ -3,11 +3,6 @@
 #include <RcppArmadillo.h>
 using namespace Rcpp;
 
-template<typename T, typename TT>
-bool sortbysec(const std::pair<T, TT> &a, const std::pair<T, TT> &b)
-{
-  return (a.second < b.second);
-}
 
 // taken from: https://stackoverflow.com/questions/12991758/creating-all-possible-k-combinations-of-n-items-in-c
 std::vector<std::vector<int>> combo(int N, int K)
@@ -27,6 +22,13 @@ std::vector<std::vector<int>> combo(int N, int K)
   } while (std::prev_permutation(bitmask.begin(), bitmask.end()));
 
   return combos;
+}
+
+
+template<typename T, typename TT>
+bool sortbysec(const std::pair<T, TT> &a, const std::pair<T, TT> &b)
+{
+  return (a.second < b.second);
 }
 
 double compute_vertex_index_mean(NumericVector& open_set, IntegerVector& sample_order)
@@ -72,6 +74,7 @@ List adjacencyCpp(List x, DataFrame& features, bool weight) {
   List xlist(x);
   int n = xlist.size();
   arma::sp_mat one_simplices(n,n);
+  arma::sp_mat upper_tri_one_simplices(n, n);
   List two_simplices(n);
   two_simplices.fill(arma::sp_mat(n, n));
 
@@ -118,69 +121,62 @@ List adjacencyCpp(List x, DataFrame& features, bool weight) {
           {
             one_simplices(i, j) = 1.0;
           }
-
         }
+
+        upper_tri_one_simplices(i, j) = 1.0;
       };
     };
   };
 
-  // generate all possible two simplices and for each possible two simplex generate a list of its faces
-  // check that its faces are contained in the adjacency matrix of one simplices, if so, compute the
-  // triple intersection of the covers
-  std::vector<std::vector<int>> two_simplices_candidates = combo(n, 3);
-  std::vector<std::vector<int>> faces = combo(3, 2);
-
-  for(auto&& it : two_simplices_candidates)
+  for(int i = 0; i < n-1; i++)
   {
-    bool contains_faces = true;
+    NumericVector cover0 = xlist[i];
 
-    Rcout << "Two Simplex Candidate: " << it[0] << " " << it[1] << " " << it[2] << std::endl;
+    arma::mat row(upper_tri_one_simplices.row(i));
 
-    for(auto&& itt : faces)
-    {
-      Rcout << "\tChecking face: " << it[itt[0]] << " " << it[itt[1]];
-      if(one_simplices(it[itt[0]], it[itt[1]]) == 0 && one_simplices(it[itt[1]], it[itt[0]]) == 0)
-      {
-        Rcout << " FALSE" << std::endl;
-        contains_faces = false;
-        break;
-      }
-      Rcout << " TRUE" << std::endl;
-    }
+    arma::uvec idxs = arma::find(row != 0);
+    arma::uvec subset = arma::find(idxs > i);
+    idxs = idxs(subset);
 
-    if (!contains_faces)
+    if(idxs.size() < 2)
     {
       continue;
     }
 
-    int v0 = it[0];
-    int v1 = it[1];
-    int v2 = it[2];
-    NumericVector cover0 = xlist[v0];
-    NumericVector cover1 = xlist[v1];
-    NumericVector cover2 = xlist[v2];
+    std::vector<std::vector<int>> edge_idxs = combo(idxs.size(), 2);
 
-    double intersection = (double)(intersect(intersect(cover0, cover1), cover2).size());
-
-    Rcout << "Cover Intersection: " << intersection << std::endl;
-
-    if (intersection > 0)
+    for(auto&& k : edge_idxs)
     {
-      double cover0_mean = find_index_mean(cover0, v0, sample_order, sample_index_mean);
-      double cover1_mean = find_index_mean(cover1, v1, sample_order, sample_index_mean);
-      double cover2_mean = find_index_mean(cover2, v2, sample_order, sample_index_mean);
+      if(one_simplices(idxs[k[0]], idxs[k[1]]) == 0 && one_simplices(idxs[k[1]], idxs[k[0]]) == 0)
+      {
+        continue;
+      }
+
+      NumericVector cover1 = xlist[idxs[k[0]]];
+      NumericVector cover2 = xlist[idxs[k[1]]];
+
+      double intersection = (double)(intersect(intersect(cover0, cover1), cover2).size());
+
+      if (intersection == 0)
+      {
+        continue;
+      }
+
+      double cover0_mean = find_index_mean(cover0, i, sample_order, sample_index_mean);
+      double cover1_mean = find_index_mean(cover1, idxs[k[0]], sample_order, sample_index_mean);
+      double cover2_mean = find_index_mean(cover2, idxs[k[1]], sample_order, sample_index_mean);
 
       std::vector<std::pair<int, double>> vertices;
-      vertices.push_back(std::make_pair(v0, cover0_mean));
-      vertices.push_back(std::make_pair(v1, cover1_mean));
-      vertices.push_back(std::make_pair(v2, cover2_mean));
+      vertices.push_back(std::make_pair(i, cover0_mean));
+      vertices.push_back(std::make_pair(idxs[k[0]], cover1_mean));
+      vertices.push_back(std::make_pair(idxs[k[1]], cover2_mean));
 
       sort(vertices.begin(), vertices.end(), sortbysec<int, double>);
 
       Rcout << "Inserting two simplex: "
-            << vertices[0].first << " "
-            << vertices[1].first << " "
-            << vertices[2].first << std::endl;
+            << vertices[0].first+1 << " "
+            << vertices[1].first+1 << " "
+            << vertices[2].first+1 << std::endl;
 
       arma::sp_mat adjacency = two_simplices(vertices[0].first);
       adjacency(vertices[1].first, vertices[2].first) = 1;

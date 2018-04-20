@@ -33,7 +33,7 @@ bool sortbysec(const std::pair<T, TT> &a, const std::pair<T, TT> &b)
 
 double compute_vertex_index_mean(NumericVector& open_set, IntegerVector& sample_order)
 {
-  double mean;
+  double mean = 0.0;
 
   for(NumericVector::iterator it = open_set.begin(); it != open_set.end(); ++it)
   {
@@ -45,25 +45,12 @@ double compute_vertex_index_mean(NumericVector& open_set, IntegerVector& sample_
   return mean/((double) open_set.size());
 }
 
-double find_index_mean(NumericVector& open_set,
-                       int vertex,
-                       IntegerVector& sample_order,
-                       std::map<int, double>& sample_index_mean)
+int find_index(int vertex,
+               std::vector<int>& rank)
 {
-  double mean;
-  std::map<int, double>::iterator it = sample_index_mean.find(vertex);
 
-  if (it == sample_index_mean.end())
-  {
-    mean = compute_vertex_index_mean(open_set, sample_order);
-    sample_index_mean.insert(std::pair<int, double>(vertex, mean));
-  }
-  else
-  {
-    mean = it->second;
-  }
-
-  return mean;
+  std::vector<int>::iterator it = std::find(rank.begin(), rank.end(), vertex+1);
+  return std::distance(rank.begin(), it);
 }
 
 /* Given an open cover x, it computes the adjacency matrix given by pairwise
@@ -74,12 +61,24 @@ List adjacencyCpp(List x, DataFrame& features, bool weight) {
   List xlist(x);
   int n = xlist.size();
   arma::sp_mat one_simplices(n,n);
-  arma::sp_mat upper_tri_one_simplices(n, n);
+
   List two_simplices(n);
   two_simplices.fill(arma::sp_mat(n, n));
 
   IntegerVector sample_order = features["sample"];
-  std::map<int, double> sample_index_mean;
+  std::vector<std::pair<int, double>> sample_index_mean;
+
+  for(int i = 0; i < n; i++)
+  {
+    NumericVector cover = xlist[i];
+    double mean = compute_vertex_index_mean(cover, sample_order);
+    sample_index_mean.push_back(std::pair<int, double>(i+1, mean));
+  }
+
+  sort(sample_index_mean.begin(), sample_index_mean.end(), sortbysec<int, double>);
+  std::vector<int> rank;
+  std::transform(sample_index_mean.begin(), sample_index_mean.end(), back_inserter(rank),
+                 (const int& (*)(const std::pair<int, double>&))std::get<0>);
 
   for(int i=0; i<n-1; i++) {
 
@@ -95,48 +94,31 @@ List adjacencyCpp(List x, DataFrame& features, bool weight) {
       double intersection = (double)(intersect(loc1,loc2).size());
 
       if (intersection > 0) {
+        int idxi = find_index(i, rank);
+        int idxj = find_index(j, rank);
 
-        double cover1 = find_index_mean(loc1, i, sample_order, sample_index_mean);
-        double cover2 = find_index_mean(loc2, j, sample_order, sample_index_mean);
+        if (idxi > idxj)
+        {
+          std::swap(idxi, idxj);
+        }
 
         if (weight) {
           double jidx = (intersection/(loc1_size + loc2_size - intersection));
-
-          if(cover1 < cover2)
-          {
-            one_simplices(j, i) = 1.0 - jidx;
-          }
-          else
-          {
-            one_simplices(i, j) = 1.0 - jidx;
-          }
-
-        } else {
-
-          if(cover1 < cover2)
-          {
-            one_simplices(j, i) = 1.0;
-          }
-          else
-          {
-            one_simplices(i, j) = 1.0;
-          }
+          one_simplices(idxi, idxj) = 1.0 - jidx;
         }
-
-        upper_tri_one_simplices(i, j) = 1.0;
+        else {
+          one_simplices(i, j) = 1.0;
+        }
       };
     };
   };
 
   for(int i = 0; i < n-1; i++)
   {
-    NumericVector cover0 = xlist[i];
+    NumericVector cover0 = xlist[rank[i]-1];
 
-    arma::mat row(upper_tri_one_simplices.row(i));
-
+    arma::mat row(one_simplices.row(i));
     arma::uvec idxs = arma::find(row != 0);
-    arma::uvec subset = arma::find(idxs > i);
-    idxs = idxs(subset);
 
     if(idxs.size() < 2)
     {
@@ -145,15 +127,18 @@ List adjacencyCpp(List x, DataFrame& features, bool weight) {
 
     std::vector<std::vector<int>> edge_idxs = combo(idxs.size(), 2);
 
-    for(auto&& k : edge_idxs)
+    for(auto&& e : edge_idxs)
     {
-      if(one_simplices(idxs[k[0]], idxs[k[1]]) == 0 && one_simplices(idxs[k[1]], idxs[k[0]]) == 0)
+      int j = idxs[e[0]];
+      int k = idxs[e[1]];
+
+      if(one_simplices(j, k) == 0 && one_simplices(k, j) == 0)
       {
         continue;
       }
 
-      NumericVector cover1 = xlist[idxs[k[0]]];
-      NumericVector cover2 = xlist[idxs[k[1]]];
+      NumericVector cover1 = xlist[rank[j]-1];
+      NumericVector cover2 = xlist[rank[k]-1];
 
       double intersection = (double)(intersect(intersect(cover0, cover1), cover2).size());
 
@@ -162,28 +147,18 @@ List adjacencyCpp(List x, DataFrame& features, bool weight) {
         continue;
       }
 
-      double cover0_mean = find_index_mean(cover0, i, sample_order, sample_index_mean);
-      double cover1_mean = find_index_mean(cover1, idxs[k[0]], sample_order, sample_index_mean);
-      double cover2_mean = find_index_mean(cover2, idxs[k[1]], sample_order, sample_index_mean);
-
-      std::vector<std::pair<int, double>> vertices;
-      vertices.push_back(std::make_pair(i, cover0_mean));
-      vertices.push_back(std::make_pair(idxs[k[0]], cover1_mean));
-      vertices.push_back(std::make_pair(idxs[k[1]], cover2_mean));
-
-      sort(vertices.begin(), vertices.end(), sortbysec<int, double>);
-
       Rcout << "Inserting two simplex: "
-            << vertices[0].first+1 << " "
-            << vertices[1].first+1 << " "
-            << vertices[2].first+1 << std::endl;
+            << rank[i] << " "
+            << rank[j] << " "
+            << rank[k] << std::endl;
 
-      arma::sp_mat adjacency = two_simplices(vertices[0].first);
-      adjacency(vertices[1].first, vertices[2].first) = 1;
-      two_simplices(vertices[0].first) = adjacency;
+      arma::sp_mat adjacency = two_simplices(rank[i]-1);
+      adjacency(rank[j]-1, rank[k]-1) = 1;
+      two_simplices(rank[i]-1) = adjacency;
     }
   }
 
   return List::create(Named("one_simplices") = one_simplices,
-                      Named("two_simplices") = two_simplices);
+                      Named("two_simplices") = two_simplices,
+                      Named("order") = rank);
 }

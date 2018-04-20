@@ -69,6 +69,7 @@ nerve_complex <- function(open_cover, features, weight = TRUE) {
   g2$points_in_vertex <- open_cover
   g2$adjacency <- get.adjacency(g2, sparse = TRUE)
   g2$two_simplices <- complex$two_simplices
+  g2$order <- complex$order
   class(g2) <- c('simplicial', 'igraph')
   return(g2)
 }

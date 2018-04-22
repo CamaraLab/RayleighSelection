@@ -1,4 +1,4 @@
-library(RayleighSelection)
+library("Rayleighselection")
 
 ## open_cover = list(c(1, 2, 3), c(2, 3), c(3, 4), c(5, 6))
 ## open_cover = list(c(5, 6, 3), c(6, 3), c(3, 4), c(1, 2))
@@ -10,9 +10,10 @@ features = data.frame(sample = samples, feature = feat)
 complex <- adjacencyCpp(open_cover, features, TRUE)
 ## complex
 
-one_simplices_idx<- data.frame(which(as.matrix(complex$one_simplices != 0), arr.ind=T))
-one_simplices_idx[with(one_simplices_idx, order(row)), ]
+one_simplices_idx <- data.frame(which(as.matrix(complex$one_simplices != 0), arr.ind=T))
+one_simplices_idx <- one_simplices_idx[with(one_simplices_idx, order(row)), ]
 one_simplices <- data.frame(t(apply(one_simplices_idx, 1, function(x) complex$order[unlist(x)])))
+rownames(one_simplices) <- NULL
 
 idxs <- which(lapply(complex$two_simplices, any) == TRUE, arr.ind=T)
 
@@ -23,13 +24,11 @@ boundary <- function(simplex, faces) {
 
   for(i in 1:n)
   {
-    simp <- rep(two_simplex)
-    simp[i] <- NA
-    simp <- simp[!is.na(simp)]
-    row_idx <- which(apply(faces[,1:n-1], 1, function(r) all(r == simp) == TRUE), arr.ind=T)
+    row_idx <- which(apply(faces[,1:n-1], 1, function(r) all(r == simplex[-i]) == TRUE), arr.ind=T)
     faces[row_idx, "sign"] <- (-1)**(i+1)
   }
 
+  faces <- faces[faces$sign != 0, ]
   return(faces)
 }
 
@@ -39,30 +38,33 @@ l1_up <- matrix(0, n, n)
 for(idx in idxs)
 {
   edges <- which(as.matrix(complex$two_simplices[[idx]] != 0), arr.ind=T)
-  two_simplex <- c(idx, edges)
-  bound <- boundary(two_simplex, one_simplices)
-  print(bound)
-  for(i in 1:n)
-  {
-    row_sign <- bound$sign[i]
+  two_simplices <- t(apply(edges, 1, function(edge) c(idx, edge)))
+  bound <- apply(two_simplices, 1, function(two_simplex) {boundary(two_simplex, one_simplices)})
 
-    if(row_sign == 0)
-      next
+  lapply(bound, function(two_simplex_boundary) {
 
-    for(j in i:n)
+    for(i in rownames(two_simplex_boundary))
     {
-      if(i == j)
+      row_sign <- two_simplex_boundary[i, "sign"]
+
+      idxi <- as.numeric(i)
+
+      for(j in rownames(two_simplex_boundary))
       {
-        l1_up[i, i] = l1_up[i, i] + 1
-      }
-      else
-      {
-        col_sign <- bound$sign[j]
-        l1_up[i, j] = row_sign*col_sign
+        idxj <- as.numeric(j)
+
+        if(i == j)
+        {
+          l1_up[idxi, idxi] <<- l1_up[idxi, idxi] + 1
+        }
+        else
+        {
+          col_sign <- two_simplex_boundary[j, "sign"]
+          l1_up[idxi, idxj] <<- row_sign*col_sign
+        }
       }
     }
-  }
+  })
 }
 
 l1_up
-

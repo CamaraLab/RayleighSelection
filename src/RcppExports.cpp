@@ -7,15 +7,15 @@
 using namespace Rcpp;
 
 // adjacencyCpp
-List adjacencyCpp(List x, DataFrame& features, bool weight);
-RcppExport SEXP _RayleighSelection_adjacencyCpp(SEXP xSEXP, SEXP featuresSEXP, SEXP weightSEXP) {
+List adjacencyCpp(List x, IntegerVector& feature_order, bool weight);
+RcppExport SEXP _RayleighSelection_adjacencyCpp(SEXP xSEXP, SEXP feature_orderSEXP, SEXP weightSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< List >::type x(xSEXP);
-    Rcpp::traits::input_parameter< DataFrame& >::type features(featuresSEXP);
+    Rcpp::traits::input_parameter< IntegerVector& >::type feature_order(feature_orderSEXP);
     Rcpp::traits::input_parameter< bool >::type weight(weightSEXP);
-    rcpp_result_gen = Rcpp::wrap(adjacencyCpp(x, features, weight));
+    rcpp_result_gen = Rcpp::wrap(adjacencyCpp(x, feature_order, weight));
     return rcpp_result_gen;
 END_RCPP
 }

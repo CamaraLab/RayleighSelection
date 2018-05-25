@@ -33,21 +33,21 @@ bool sortbysec(const std::pair<T, TT> &a, const std::pair<T, TT> &b)
 }
 
 
-/* Given an open set and a vector (sample_order) which assigns an order to the points contained in the open set
- * this function returns the mean of the orders of the points in the open set, this is used to
+/* Given an open set and a vector (feature_order) which assigns an order to the features contained in the open
+ * set this function returns the mean of the orders of the features in the open set, this is used to
  * assign an order to the open sets (ie the vertices of the nerve complex)
- *                                 vertices = < 1, 2, 3, 4, 5 >
- * ex: open_set = < 2, 4, 5 >, sample_order = < 3, 1, 5, 2, 3 >
+ *                                  vertices = < 1, 2, 3, 4, 5 >
+ * ex: open_set = < 2, 4, 5 >, feature_order = < 3, 1, 5, 2, 3 >
        computex_vertex_index_mean(<2, 4, 5 >, < 3, 1, 5, 2, 3 >) returns (1 + 2 + 3)/3
  */
-double compute_vertex_index_mean(NumericVector& open_set, IntegerVector& sample_order)
+double compute_vertex_index_mean(NumericVector& open_set, IntegerVector& feature_order)
 {
   double mean = 0.0;
 
   for(NumericVector::iterator it = open_set.begin(); it != open_set.end(); ++it)
   {
-    IntegerVector::iterator idx_it = std::find(sample_order.begin(), sample_order.end(), *it);
-    int idx = std::distance(sample_order.begin(), idx_it);
+    IntegerVector::iterator idx_it = std::find(feature_order.begin(), feature_order.end(), *it);
+    int idx = std::distance(feature_order.begin(), idx_it);
     mean += (idx+1);
   }
 
@@ -72,7 +72,7 @@ int find_rank(int vertex,
  * intersections of the open sets.
  */
 // [[Rcpp::export]]
-List adjacencyCpp(List x, DataFrame& features, bool weight) {
+List adjacencyCpp(List x, IntegerVector& feature_order, bool weight) {
   List xlist(x);
   int n = xlist.size();
   arma::sp_mat one_simplices(n,n);
@@ -81,22 +81,21 @@ List adjacencyCpp(List x, DataFrame& features, bool weight) {
   two_simplices.fill(arma::sp_mat(n, n));
 
   // for a given vertex i in the nerve complex get the associated open set and compute the mean of the
-  // indices (ie the orders) of the points in the open set, sample_index_mean will then be a vector of pairs
-  // < i, mean >
-  IntegerVector sample_order = features["sample"];
-  std::vector<std::pair<int, double>> sample_index_mean;
+  // indices (ie the orders) of the features in the open set, feature_index_mean will then be a vector of
+  // pairs < i, mean >
+  std::vector<std::pair<int, double>> feature_index_mean;
 
   for(int i = 0; i < n; i++)
   {
     NumericVector cover = xlist[i];
-    double mean = compute_vertex_index_mean(cover, sample_order);
-    sample_index_mean.push_back(std::pair<int, double>(i+1, mean));
+    double mean = compute_vertex_index_mean(cover, feature_order);
+    feature_index_mean.push_back(std::pair<int, double>(i+1, mean));
   }
 
   // sort all pairs < i, mean > by the mean and return the i's to get the order of the vertices in the complex
-  sort(sample_index_mean.begin(), sample_index_mean.end(), sortbysec<int, double>);
+  sort(feature_index_mean.begin(), feature_index_mean.end(), sortbysec<int, double>);
   std::vector<int> rank;
-  std::transform(sample_index_mean.begin(), sample_index_mean.end(), back_inserter(rank),
+  std::transform(feature_index_mean.begin(), feature_index_mean.end(), back_inserter(rank),
                  (const int& (*)(const std::pair<int, double>&))std::get<0>);
 
   // build the adjacency matrix for the one simplices by computing pairwise intersections
@@ -117,11 +116,13 @@ List adjacencyCpp(List x, DataFrame& features, bool weight) {
         // the adjancency matrix is directed and will go from the vertex with smaller rank to larger rank
         // note the rows and columns of the adjancency matrix will be labeled according to rank, ie if the
         // rank is 3 < 4 < 1 < 2 then one_simplices will be:
-        //   3 4 1 2
-        // 3 0 . . .
-        // 4 0 0 . .  where only . will be non-zero
-        // 1 0 0 0 .
-        // 2 0 0 0 0
+        //  |3 4 1 2
+        // -|-------
+        // 3|0 . . .
+        // 4|0 0 . .  where only . will be non-zero
+        // 1|0 0 0 .
+        // 2|0 0 0 0
+
         int idxi = find_rank(i, rank);
         int idxj = find_rank(j, rank);
 

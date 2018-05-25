@@ -4,7 +4,8 @@
 using namespace Rcpp;
 
 
-// taken from: https://stackoverflow.com/questions/12991758/creating-all-possible-k-combinations-of-n-items-in-c
+// taken from:
+// https://stackoverflow.com/questions/12991758/creating-all-possible-k-combinations-of-n-items-in-c
 std::vector<std::vector<int>> combo(int N, int K)
 {
   std::string bitmask(K, 1); // K leading 1's
@@ -31,6 +32,14 @@ bool sortbysec(const std::pair<T, TT> &a, const std::pair<T, TT> &b)
   return (a.second < b.second);
 }
 
+
+/* Given an open set and a vector (sample_order) which assigns an order to the points contained in the open set
+ * this function returns the mean of the orders of the points in the open set, this is used to
+ * assign an order to the open sets (ie the vertices of the nerve complex)
+ *                                 vertices = < 1, 2, 3, 4, 5 >
+ * ex: open_set = < 2, 4, 5 >, sample_order = < 3, 1, 5, 2, 3 >
+       computex_vertex_index_mean(<2, 4, 5 >, < 3, 1, 5, 2, 3 >) returns (1 + 2 + 3)/3
+ */
 double compute_vertex_index_mean(NumericVector& open_set, IntegerVector& sample_order)
 {
   double mean = 0.0;
@@ -45,10 +54,16 @@ double compute_vertex_index_mean(NumericVector& open_set, IntegerVector& sample_
   return mean/((double) open_set.size());
 }
 
-int find_index(int vertex,
+/* Given a vertex and a vector which assigns an order to all vertices return the order
+ * ex: vertices = < 1, 2, 3, 4 >
+                    |  |  |  |   => vertex order is 3 < 4 < 1 < 2
+           rank = < 3, 4, 1, 2 >
+
+   find_rank(4, rank) returns 2
+ */
+int find_rank(int vertex,
                std::vector<int>& rank)
 {
-
   std::vector<int>::iterator it = std::find(rank.begin(), rank.end(), vertex+1);
   return std::distance(rank.begin(), it);
 }
@@ -65,6 +80,9 @@ List adjacencyCpp(List x, DataFrame& features, bool weight) {
   List two_simplices(n);
   two_simplices.fill(arma::sp_mat(n, n));
 
+  // for a given vertex i in the nerve complex get the associated open set and compute the mean of the
+  // indices (ie the orders) of the points in the open set, sample_index_mean will then be a vector of pairs
+  // < i, mean >
   IntegerVector sample_order = features["sample"];
   std::vector<std::pair<int, double>> sample_index_mean;
 
@@ -75,11 +93,13 @@ List adjacencyCpp(List x, DataFrame& features, bool weight) {
     sample_index_mean.push_back(std::pair<int, double>(i+1, mean));
   }
 
+  // sort all pairs < i, mean > by the mean and return the i's to get the order of the vertices in the complex
   sort(sample_index_mean.begin(), sample_index_mean.end(), sortbysec<int, double>);
   std::vector<int> rank;
   std::transform(sample_index_mean.begin(), sample_index_mean.end(), back_inserter(rank),
                  (const int& (*)(const std::pair<int, double>&))std::get<0>);
 
+  // build the adjacency matrix for the one simplices by computing pairwise intersections
   for(int i=0; i<n-1; i++) {
 
     NumericVector loc1 = xlist[i];
@@ -94,12 +114,21 @@ List adjacencyCpp(List x, DataFrame& features, bool weight) {
       double intersection = (double)(intersect(loc1,loc2).size());
 
       if (intersection > 0) {
-        int idxi = find_index(i, rank);
-        int idxj = find_index(j, rank);
+        // the adjancency matrix is directed and will go from the vertex with smaller rank to larger rank
+        // note the rows and columns of the adjancency matrix will be labeled according to rank, ie if the
+        // rank is 3 < 4 < 1 < 2 then one_simplices will be:
+        //   3 4 1 2
+        // 3 0 . . .
+        // 4 0 0 . .  where only . will be non-zero
+        // 1 0 0 0 .
+        // 2 0 0 0 0
+        int idxi = find_rank(i, rank);
+        int idxj = find_rank(j, rank);
 
         if (idxi > idxj)
         {
           std::swap(idxi, idxj);
+          std::swap(i, j);
         }
 
         if (weight) {
@@ -115,8 +144,14 @@ List adjacencyCpp(List x, DataFrame& features, bool weight) {
 
   for(int i = 0; i < n-1; i++)
   {
+    // the outer for loop loops over the rows in the one simplices adjancency matrix, but
+    // since the one simplices adjacency matrix is labeled by the rank we need to do some
+    // indirection for indexing into the open cover to get the associated open set with each vertex
+    // ex: if the rank is 3 < 4 < 1 < 2 then when i = 0, we want to get the open set associated with vertex 3
     NumericVector cover0 = xlist[rank[i]-1];
 
+    // next we want to see how many 0-simplices the given vertex is adjancent to. if it is not adjancent to
+    // at least 2 other 0-simplices then it cannot belong to a 2-simplex
     arma::mat row(one_simplices.row(i));
     arma::uvec idxs = arma::find(row != 0);
 
@@ -125,6 +160,10 @@ List adjacencyCpp(List x, DataFrame& features, bool weight) {
       continue;
     }
 
+    // for a 2-simplex that contains vertex rank[i] there will be one 1-simplex that does not contain
+    // rank[i] we want to generate all such 1-simplices and check that they are contained in the complex
+    // ex: for the 2-simplex <1, 2, 3> we need to check that the edge <2, 3> exists since from the
+    // above checks we already know <1, 2> and <1, 3> exist
     std::vector<std::vector<int>> edge_idxs = combo(idxs.size(), 2);
 
     for(auto&& e : edge_idxs)
@@ -137,6 +176,8 @@ List adjacencyCpp(List x, DataFrame& features, bool weight) {
         continue;
       }
 
+      // if the faces of the 2-simplex are contained, compute the triple intersection
+      // if it is non-zero insert the two-simplex
       NumericVector cover1 = xlist[rank[j]-1];
       NumericVector cover2 = xlist[rank[k]-1];
 
@@ -152,6 +193,8 @@ List adjacencyCpp(List x, DataFrame& features, bool weight) {
             << rank[j] << " "
             << rank[k] << std::endl;
 
+      // two_simplices is a list of sparse matrices. for a given 2-simplex <i, j, k> the first index i is
+      // the i'th sparse matrix in the list, the second indices (j, k) are the row and columns for that matrix
       arma::sp_mat adjacency = two_simplices(rank[i]-1);
       adjacency(rank[j]-1, rank[k]-1) = 1;
       two_simplices(rank[i]-1) = adjacency;

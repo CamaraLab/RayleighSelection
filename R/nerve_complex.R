@@ -38,9 +38,10 @@
 #'
 #' @export
 #'
-nerve_complex <- function(open_cover, features, weight = TRUE) {
+nerve_complex <- function(open_cover, weight = TRUE) {
   # Builds adjacency matrix and igraph object
-  complex <- adjacencyCpp(open_cover, features, weight)
+  feature_order <- 1:max(as.numeric(lapply(open_cover, max)))
+  complex <- adjacencyCpp(open_cover, feature_order, weight)
   adjacency <- Matrix(complex$one_simplices, sparse = TRUE)
 
   diag(adjacency)<-1
@@ -68,8 +69,10 @@ nerve_complex <- function(open_cover, features, weight = TRUE) {
   # Enriches the class with information about the open cover and adjacency matrix
   g2$points_in_vertex <- open_cover
   g2$adjacency <- get.adjacency(g2, sparse = TRUE)
+
   g2$two_simplices <- complex$two_simplices
   g2$order <- complex$order
+
   class(g2) <- c('simplicial', 'igraph')
   return(g2)
 }

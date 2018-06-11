@@ -189,10 +189,10 @@ List adjacencyCpp(List x, IntegerVector& feature_order, bool weight) {
         continue;
       }
 
-      Rcout << "Inserting two simplex: "
-            << rank[i] << " "
-            << rank[j] << " "
-            << rank[k] << std::endl;
+      // Rcout << "Inserting two simplex: "
+      //      << rank[i] << " "
+      //      << rank[j] << " "
+      //      << rank[k] << std::endl;
 
       // two_simplices is a list of sparse matrices. for a given 2-simplex <i, j, k> the first index i is
       // the i'th sparse matrix in the list, the second indices (j, k) are the row and columns for that matrix

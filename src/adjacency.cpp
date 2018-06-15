@@ -62,7 +62,7 @@ double compute_vertex_index_mean(NumericVector& open_set, IntegerVector& feature
    find_rank(4, rank) returns 2
  */
 int find_rank(int vertex,
-               std::vector<int>& rank)
+              std::vector<int>& rank)
 {
   std::vector<int>::iterator it = std::find(rank.begin(), rank.end(), vertex+1);
   return std::distance(rank.begin(), it);
@@ -129,7 +129,6 @@ List adjacencyCpp(List x, IntegerVector& feature_order, bool weight) {
         if (idxi > idxj)
         {
           std::swap(idxi, idxj);
-          std::swap(i, j);
         }
 
         if (weight) {
@@ -137,7 +136,7 @@ List adjacencyCpp(List x, IntegerVector& feature_order, bool weight) {
           one_simplices(idxi, idxj) = 1.0 - jidx;
         }
         else {
-          one_simplices(i, j) = 1.0;
+          one_simplices(idxi, idxj) = 1.0;
         }
       };
     };

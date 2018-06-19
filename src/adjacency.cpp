@@ -188,16 +188,19 @@ List adjacencyCpp(List x, IntegerVector& feature_order, bool weight) {
         continue;
       }
 
+      std::vector<int> vertices{ rank[i], rank[j], rank[k] };
+      std::sort(vertices.begin(), vertices.end());
+
       // Rcout << "Inserting two simplex: "
-      //      << rank[i] << " "
-      //      << rank[j] << " "
-      //      << rank[k] << std::endl;
+      //       << vertices[0] << " "
+      //       << vertices[1] << " "
+      //       << vertices[2] << std::endl;
 
       // two_simplices is a list of sparse matrices. for a given 2-simplex <i, j, k> the first index i is
       // the i'th sparse matrix in the list, the second indices (j, k) are the row and columns for that matrix
-      arma::sp_mat adjacency = two_simplices(rank[i]-1);
-      adjacency(rank[j]-1, rank[k]-1) = 1;
-      two_simplices(rank[i]-1) = adjacency;
+      arma::sp_mat adjacency = two_simplices(vertices[0]-1);
+      adjacency(vertices[1]-1, vertices[2]-1) = 1;
+      two_simplices(vertices[0]-1) = adjacency;
     }
   }
 

@@ -40,11 +40,16 @@
 #'
 nerve_complex <- function(open_cover, weight = TRUE) {
   # Builds adjacency matrix and igraph object
-  feature_order <- 1:max(as.numeric(lapply(open_cover, max)))
+  kal <- which(lapply(open_cover, length) %in% 1)
+  open_cover[kal] <- NULL
+  open_cover <- unique(open_cover)
+
+  feature_order <- 1:length(open_cover)
   complex <- adjacencyCpp(open_cover, feature_order, weight)
   adjacency <- Matrix(complex$one_simplices, sparse = TRUE)
 
-  diag(adjacency)<-1
+  sorted_order <- order(as.numeric(complex$order))
+  adjacency <- adjacency[sorted_order, sorted_order]
 
   if (!weight)
   {
@@ -52,14 +57,6 @@ nerve_complex <- function(open_cover, weight = TRUE) {
   }
 
   g2 <- graph.adjacency(adjacency, mode="directed", weighted=weight)
-
-  # Prunes vertices that only one element and simplifies the graph
-  kal <- which(lapply(open_cover, length) %in% 1)
-  open_cover[kal] <- NULL
-  g2 <- delete_vertices(g2, kal)
-  g2 <- contract(g2, match(open_cover, unique(open_cover)))
-  g2 <- simplify(g2)
-  open_cover <- unique(open_cover)
 
   # Decorates the graph to include node sizes, color, etc.
   V(g2)$size <- log2(as.numeric(lapply(open_cover, length))+1)*2.0

@@ -6,8 +6,8 @@ open_cover = list(c(1, 2), c(2, 3), c(3, 4), c(2, 4, 5))
 n = 5
 order = 1:n
 complex <- adjacencyCpp(open_cover, order, TRUE)
-## complex
 
+## complex
 zero_simplices = as.data.frame(matrix(1:length(open_cover), length(open_cover), 1))
 
 ## get the non-zero indices of the entries in the adjacency matrix, sort them by the row index, and

@@ -63,7 +63,8 @@ plot_skeleton <- function(g2, r, g, b, k, pushforward = mean, seed = 10, iterati
     V(g2)$color = rgb(1-(k2+k3)/2,1-(k1+k3)/2,1-(k1+k2)/2)
   }
 
-  plot(g2, layout = layout.forceatlas2(as.undirected(g2), directed=TRUE, iterations=iterations, plotstep=0))
+  plot(g2, layout = layout.forceatlas2(as.undirected(g2), directed=TRUE, iterations=iterations, plotstep=0),
+       edge.arrow.size=0.4)
   if (file != "") {
     V(g2)$fillcolor <- V(g2)$color
     V(g2)$fixedsize <- TRUE

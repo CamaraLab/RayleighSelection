@@ -14,11 +14,13 @@ List pushCpp(arma::vec v, List x, SEXP perm, arma::sp_mat adjacency) {
   arma::vec xv(v);
   arma::vec co = xv;
   int n = xlist.size();
+  int nn = arma::nonzeros(adjacency).size();
   int perms = as<int >(perm);
   arma::mat res_vertices = arma::zeros(perms+1, n);
-  arma::mat res_edges = arma::zeros(perms+1, n);
+  arma::mat res_edges = arma::zeros(perms+1, nn);
 
   for (int i=0; i<perms+1; i++) {
+    int kk = 0;
     for (int j=0; j<n; j++) {
 
       arma::ivec o1 = xlist[j];
@@ -42,14 +44,15 @@ List pushCpp(arma::vec v, List x, SEXP perm, arma::sp_mat adjacency) {
       {
         arma::ivec o2 = xlist[*it];
         arma::ivec edge_cover = arma::intersect(o1, o2);
-        int v = edge_cover.size();
+        int vn = edge_cover.size();
 
-        for(int k = 0; k < v; k++)
+        for(int k = 0; k < vn; k++)
         {
-          res_edges(i, j) += co(edge_cover[k]-1);
+          res_edges(i, kk) += co(edge_cover[k]-1);
         }
 
-        res_edges(i, j) /= v;
+        res_edges(i, kk) /= vn;
+        ++kk;
       }
     }
 

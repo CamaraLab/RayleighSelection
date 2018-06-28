@@ -17,8 +17,8 @@ push <- function(lo, g2, pushforward) {
   if (!missing(lo)) {
     lo[is.na(lo)] <- 0
     if (sum(abs(lo))!=0) {
-      r1 <- pushCpp(as.numeric(lo), g2$points_in_vertex, 0)
-      return(log2(1.0 + ((r1-min(r1))/(max(r1)-min(r1)))))
+      r1 <- pushCpp(as.numeric(lo), g2$points_in_vertex, 0, g2$adjacency)
+      return(log2(1.0 + ((r1$vertices-min(r1$vertices))/(max(r1$vertices)-min(r1$vertices)))))
     } else {
       return(0)
     }

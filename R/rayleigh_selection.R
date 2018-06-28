@@ -62,6 +62,7 @@ rayleigh_selection <- function(g2, f, shift = 0.0, num_perms = 1000, seed = 10, 
 
   siz <- sqrt(length(g2$adjacency))
 
+  # Compute L_0 Laplacian
   adj_sym <- g2$adjacency+t(g2$adjacency)
   if (adjacency) {
     dd <- rep(1, siz)
@@ -72,68 +73,9 @@ rayleigh_selection <- function(g2, f, shift = 0.0, num_perms = 1000, seed = 10, 
     col <- diag(dd)-adj_sym
   }
 
-
-  # Evaluates R and p for a feature fo
-  cornel <- function(fo) {
-    kmn<-pushCpp(as.numeric(fo), g2$points_in_vertex, num_perms, g2$adjacency)
-    kk <- kmn$vertices
-    kk <- kk-matrix(rep(kk%*%dd/sum(dd),dim(kk)[2]),dim(kk))
-    qlom <- rowSums(dd*kk^2)
-    if (sum(abs(qlom))==0.0) {
-      qt <- rep(Inf,length(qlom))
-    } else {
-      qt <- rowSums((kk%*%col)*kk)/qlom
-      qt[is.nan(qt)] <- Inf
-    }
-    ph <- NULL
-    ph$R <- qt[1]
-    ph$p <- (sum(qt<=qt[1])-1.0)/num_perms
-    return(ph)
-  }
-
-  # Each worker evaluates R anp p for a set fu of features
-  worker <- function(fu) {
-    qh <- NULL
-    qh$R <- NULL
-    qh$p <- NULL
-    for (m in row.names(fu)) {
-      d <- cornel(fu[m,])
-      qh$R <- rbind(qh$R, d$R)
-      qh$p <- rbind(qh$p, d$p)
-    }
-    return(data.frame(qh, row.names = row.names(fu)))
-  }
-  if (num_cores == 1 || nrow(f) == 1) {
-    qqh <- worker(f+shift)
-  } else {
-    # If more than one core then split the features in num_cores parts accordingly
-    wv <- floor(nrow(f)/num_cores)
-    wr <- nrow(f) - wv*num_cores
-    work <- list()
-    if (wr>0) {
-      for (m in 1:wr) {
-        work[[m]] <- (f[(1+(m-1)*(wv+1)):(m*(wv+1)),] + shift)
-      }
-      for (m in (wr+1):num_cores) {
-        work[[m]] <- (f[(1+wr+(m-1)*wv):(wr+m*wv),] + shift)
-      }
-    } else {
-      for (m in 1:num_cores) {
-        work[[m]] <- (f[(1+(m-1)*wv):(m*wv),] + shift)
-      }
-    }
-    reul <- mclapply(work, worker, mc.cores = num_cores)
-    qqh <- reul[[1]]
-    for (m in 2:num_cores) {
-      qqh <- rbind(qqh, reul[[m]])
-    }
-  }
-
-  # Adjust for multiple hypothesis testing
-  qqh$q <- p.adjust(qqh$p, method = 'BH')
-
-  # If L1 compute also L_1 Laplacian
+  # Compute L_1 Laplacian
   if (L1) {
+    ddv <- rep(1,sum(g2$adjacency>0))
     zero_simplices = as.data.frame(matrix(1:siz, siz, 1))
 
     ## get the non-zero indices of the entries in the adjacency matrix, sort them by the row index, and
@@ -229,15 +171,15 @@ rayleigh_selection <- function(g2, f, shift = 0.0, num_perms = 1000, seed = 10, 
 
           ## if the i'th and j'th 1-simplices share a 0-simplex (zero_simplex) compute the boundary of the two
           ## 1-simplices
-          f <- boundary(one_simplices[i,], zero_simplices)
-          fp <- boundary(one_simplices[j, ], zero_simplices)
+          ff <- boundary(one_simplices[i,], zero_simplices)
+          ffp <- boundary(one_simplices[j, ], zero_simplices)
 
           ## get the sign of the zero_simplex in the two boundaries,
           ## l1_down = sgn(E, d(F))*sgn(E, d(F'))
-          row <- which(f[,1,drop=F] == zero_simplex[1,], arr.ind=T)[1]
-          sgn_e_f <- f[row,]$sign
-          row <- which(fp[,1,drop=F] == zero_simplex[1,], arr.ind=T)[1]
-          sgn_e_fp <- fp[row, ]$sign
+          row <- which(ff[,1,drop=F] == zero_simplex[1,], arr.ind=T)[1]
+          sgn_e_f <- ff[row,]$sign
+          row <- which(ffp[,1,drop=F] == zero_simplex[1,], arr.ind=T)[1]
+          sgn_e_fp <- ffp[row, ]$sign
 
           l1_down[i, j] <- sgn_e_f*sgn_e_fp
           l1_down[j, i] <- sgn_e_f*sgn_e_fp
@@ -245,9 +187,95 @@ rayleigh_selection <- function(g2, f, shift = 0.0, num_perms = 1000, seed = 10, 
       }
     }
 
-    print(l1_up + l1_down)
-
   }
 
-  return(qqh)
+
+  # Evaluates R and p for a feature fo
+  cornel <- function(fo) {
+    kmn<-pushCpp(as.numeric(fo), g2$points_in_vertex, num_perms, g2$adjacency)
+    kk <- kmn$vertices
+    kk <- kk-matrix(rep(kk%*%dd/sum(dd),dim(kk)[2]),dim(kk))
+    qlom <- rowSums(dd*kk^2)
+    if (sum(abs(qlom))==0.0) {
+      qt <- rep(Inf,length(qlom))
+    } else {
+      qt <- rowSums((kk%*%col)*kk)/qlom
+      qt[is.nan(qt)] <- Inf
+    }
+    ph <- NULL
+    ph$R0 <- qt[1]
+    ph$p0 <- (sum(qt<=qt[1])-1.0)/num_perms
+    if (L1) {
+      kkv <- kmn$edges
+      kkv <- kkv-matrix(rep(kkv%*%ddv/sum(ddv),dim(kkv)[2]),dim(kkv))
+      qlomv <- rowSums(ddv*kkv^2)
+      if (sum(abs(qlomv))==0.0) {
+        qtv <- rep(Inf,length(qlomv))
+      } else {
+        qtv <- rowSums((kkv%*%(l1_up+l1_down))*kkv)/qlomv
+        qtv[is.nan(qtv)] <- Inf
+      }
+      ph$R1 <- qtv[1]
+      ph$p1 <- (sum(qtv<=qtv[1])-1.0)/num_perms
+    }
+    return(ph)
+  }
+
+  # Each worker evaluates R anp p for a set fu of features
+  worker <- function(fu) {
+    qh <- NULL
+    qh$R0 <- NULL
+    qh$p0 <- NULL
+    if (L1) {
+      qh$R1 <- NULL
+      qh$p1 <- NULL
+    }
+    for (m in row.names(fu)) {
+      d <- cornel(fu[m,])
+      qh$R0 <- rbind(qh$R0, d$R0)
+      qh$p0 <- rbind(qh$p0, d$p0)
+      if (L1) {
+        qh$R1 <- rbind(qh$R1, d$R1)
+        qh$p1 <- rbind(qh$p1, d$p1)
+      }
+    }
+    return(data.frame(qh, row.names = row.names(fu)))
+  }
+  if (num_cores == 1 || nrow(f) == 1) {
+    qqh <- worker(f+shift)
+  } else {
+    # If more than one core then split the features in num_cores parts accordingly
+    wv <- floor(nrow(f)/num_cores)
+    wr <- nrow(f) - wv*num_cores
+    work <- list()
+    if (wr>0) {
+      for (m in 1:wr) {
+        work[[m]] <- (f[(1+(m-1)*(wv+1)):(m*(wv+1)),] + shift)
+      }
+      for (m in (wr+1):num_cores) {
+        work[[m]] <- (f[(1+wr+(m-1)*wv):(wr+m*wv),] + shift)
+      }
+    } else {
+      for (m in 1:num_cores) {
+        work[[m]] <- (f[(1+(m-1)*wv):(m*wv),] + shift)
+      }
+    }
+    reul <- mclapply(work, worker, mc.cores = num_cores)
+    qqh <- reul[[1]]
+    for (m in 2:num_cores) {
+      qqh <- rbind(qqh, reul[[m]])
+    }
+  }
+
+  # Adjust for multiple hypothesis testing
+  qqh$q0 <- p.adjust(qqh$p0, method = 'BH')
+  if (L1) {
+    qqh$q1 <- p.adjust(qqh$p1, method = 'BH')
+  }
+
+  if (L1) {
+    return(qqh[,c(1,2,5,3,4,6)])
+  } else {
+    return(qqh)
+  }
 }

@@ -44,7 +44,7 @@ nerve_complex <- function(open_cover, weight = TRUE) {
   open_cover[kal] <- NULL
   open_cover <- unique(open_cover)
 
-  feature_order <- 1:length(open_cover)
+  feature_order <- 1:max(unlist(open_cover))
   complex <- adjacencyCpp(open_cover, feature_order, weight)
   adjacency <- Matrix(complex$one_simplices, sparse = TRUE)
 

@@ -11,7 +11,6 @@
 #' @param f a numeric vector or matrix specifying one or more functions with support on
 #' the set of points whose significance will be assesed in the simplicial complex. Each
 #' column corresponds to a point and each row specifies a different function.
-#' @param shift real number specifying a shift that is added to \code{f}. By default is set to 0.
 #' @param num_perms number of permutations used to build the null distribution for each
 #' feature. By default is set to 1000.
 #' @param seed integer specifying the seed used to initialize the generator of permutations.
@@ -53,7 +52,7 @@
 #'
 #' @export
 #'
-rayleigh_selection <- function(g2, f, shift = 0.0, num_perms = 1000, seed = 10, num_cores = 1,
+rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1,
                                adjacency = FALSE, L1 = FALSE) {
   # Check class of f
   if (class(f) != 'data.frame') {
@@ -249,7 +248,7 @@ rayleigh_selection <- function(g2, f, shift = 0.0, num_perms = 1000, seed = 10, 
     return(data.frame(qh, row.names = row.names(fu)))
   }
   if (num_cores == 1 || nrow(f) == 1) {
-    qqh <- worker(f+shift)
+    qqh <- worker(f)
   } else {
     # If more than one core then split the features in num_cores parts accordingly
     wv <- floor(nrow(f)/num_cores)
@@ -257,14 +256,14 @@ rayleigh_selection <- function(g2, f, shift = 0.0, num_perms = 1000, seed = 10, 
     work <- list()
     if (wr>0) {
       for (m in 1:wr) {
-        work[[m]] <- (f[(1+(m-1)*(wv+1)):(m*(wv+1)),] + shift)
+        work[[m]] <- (f[(1+(m-1)*(wv+1)):(m*(wv+1)),])
       }
       for (m in (wr+1):num_cores) {
-        work[[m]] <- (f[(1+wr+(m-1)*wv):(wr+m*wv),] + shift)
+        work[[m]] <- (f[(1+wr+(m-1)*wv):(wr+m*wv),])
       }
     } else {
       for (m in 1:num_cores) {
-        work[[m]] <- (f[(1+(m-1)*wv):(m*wv),] + shift)
+        work[[m]] <- (f[(1+(m-1)*wv):(m*wv),])
       }
     }
     reul <- mclapply(work, worker, mc.cores = num_cores)

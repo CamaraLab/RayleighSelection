@@ -75,12 +75,14 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
   # Compute L_1 Laplacian
   if (L1) {
     ddv <- rep(1,sum(g2$adjacency>0))
-    zero_simplices = as.data.frame(matrix(1:siz, siz, 1))
+    zero_simplices <- as.data.frame(matrix(1:siz, siz, 1))
+    one_simplices_l <- adj_sym
+    one_simplices_l[lower.tri(one_simplices_l)] <- 0
 
     ## get the non-zero indices of the entries in the adjacency matrix, sort them by the row index, and
     ## convert the row index into the vertex using the order of the vertices, since the adjacency matrix returned
     ## by adjacencyCpp will have rows and columns labeled by the order
-    one_simplices_idx <- data.frame(which(as.matrix(g2$one_simplices != 0), arr.ind=T))
+    one_simplices_idx <- data.frame(which(as.matrix(one_simplices_l != 0), arr.ind=T))
     one_simplices_idx <- one_simplices_idx[with(one_simplices_idx, order(row)), ]
     one_simplices <- data.frame(t(apply(one_simplices_idx, 1, function(x) g2$order[unlist(x)])))
     rownames(one_simplices) <- NULL

@@ -66,7 +66,7 @@ nerve_complex <- function(open_cover, weight = TRUE) {
   # Enriches the class with information about the open cover and adjacency matrix
   g2$points_in_vertex <- open_cover
   g2$adjacency <- get.adjacency(g2, sparse = TRUE)
-  g2$one_simplices <- complex$one_simplices
+  #g2$one_simplices <- complex$one_simplices
   g2$two_simplices <- complex$two_simplices
   g2$order <- complex$order
 

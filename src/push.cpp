@@ -45,6 +45,10 @@ List pushCpp(arma::vec v, List x, SEXP perm, arma::sp_mat adjacency) {
         arma::ivec o2 = xlist[*it];
         arma::ivec edge_cover = arma::intersect(o1, o2);
         int vn = edge_cover.size();
+        if (vn == 0) {
+          edge_cover = arma::join_cols(o1, o2);
+          vn = edge_cover.size();
+        }
 
         for(int k = 0; k < vn; k++)
         {

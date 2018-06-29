@@ -32,7 +32,18 @@ graph_to_complex <- function(adjacency)
 
   # Enriches the class with information about the open cover and adjacency matrix
   g2$points_in_vertex <- seq(1, sqrt(length(adjacency)), 1)
+  g2$order <- seq(1, sqrt(length(adjacency)), 1)
   g2$adjacency <- get.adjacency(g2, sparse = TRUE)
+  g2$adjacency[lower.tri(g2$adjacency)] <- 0
+  #g2$one_simplices <- g2$adjacency
+  g2$two_simplices <- list()
+  siz <- sqrt(length(g2$adjacency))
+  for (i in 1:siz){
+    g2$two_simplices[[i]] <- Matrix(0, siz, siz, sparse=TRUE)
+  }
+  for (m in suppressWarnings(cliques(g2,3,3))) {
+    g2$two_simplices[[as.numeric(m[1])]][as.numeric(m[2]), as.numeric(m[3])] <- 1
+  }
 
   # Decorates the graph to include node sizes, color, etc.
   V(g2)$size <- 4.0

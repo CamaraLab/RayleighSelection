@@ -63,8 +63,18 @@ plot_skeleton <- function(g2, r, g, b, k, pushforward = mean, seed = 10, iterati
     V(g2)$color = rgb(1-(k2+k3)/2,1-(k1+k3)/2,1-(k1+k2)/2)
   }
 
-  plot(g2, layout = layout.forceatlas2(as.undirected(g2), directed=TRUE, iterations=iterations, plotstep=0),
-       edge.arrow.size=0.4)
+  p = layout.forceatlas2(as.undirected(g2), directed=TRUE, iterations=iterations, plotstep=0)
+  plot(norm_coords(p),cex=0.1,xaxt='n', yaxt='n', ann=FALSE, bty='n')
+  for (m in 1:sqrt(length(g2$adjacency))) {
+    qwy <- which(g2$two_simplices[[m]]!=0,arr.ind = T)
+    if (nrow(qwy) > 0) {
+      for (k in 1:nrow(qwy)) {
+        polygon(norm_coords(p)[c(m, as.numeric(qwy[k,1]), as.numeric(qwy[k,2])),], col = rgb(0.75,0.85,0.95),
+              border = rgb(0.75,0.85,0.95))
+      }
+    }
+  }
+  plot(g2, layout = p, edge.arrow.size=0.4, add = TRUE)
   if (file != "") {
     V(g2)$fillcolor <- V(g2)$color
     V(g2)$fixedsize <- TRUE

@@ -85,6 +85,12 @@ rayleigh_selection <- function(g2, f, shift = 0.0, num_perms = 1000, seed = 10, 
     one_simplices_idx <- one_simplices_idx[with(one_simplices_idx, order(row)), ]
     one_simplices <- data.frame(t(apply(one_simplices_idx, 1, function(x) g2$order[unlist(x)])))
     rownames(one_simplices) <- NULL
+    adjo <- matrix(rep(0,siz**2),c(siz,siz))
+    for (ik in 1:nrow(one_simplices)) {
+      adjo[one_simplices[ik,1],one_simplices[ik,2]] <- ik
+    }
+    diji <- as.numeric(t(adjo))
+    diji <- diji[diji != 0]
 
     ## the boundary function takes a n-simplex and a dataframe containing all (n-1)-simplices in the complex
     ## it then looks for the row in the faces dataframe which equals the n-simplex without the i'th vertex and
@@ -96,6 +102,8 @@ rayleigh_selection <- function(g2, f, shift = 0.0, num_perms = 1000, seed = 10, 
       {
         row_idx <- which(apply(faces[,1:n-1,drop=F], 1, function(r) all(r == simplex[-i]) == TRUE), arr.ind=T)
         faces[row_idx, "sign"] <- (-1)**(i+1)
+        row_idx <- which(apply(faces[,1:n-1,drop=F], 1, function(r) all(r == rev(simplex[-i])) == TRUE), arr.ind=T)
+        faces[row_idx, "sign"] <- (-1)**i
       }
       faces <- faces[faces$sign != 0, ]
       return(faces)
@@ -189,7 +197,6 @@ rayleigh_selection <- function(g2, f, shift = 0.0, num_perms = 1000, seed = 10, 
 
   }
 
-
   # Evaluates R and p for a feature fo
   cornel <- function(fo) {
     kmn<-pushCpp(as.numeric(fo), g2$points_in_vertex, num_perms, g2$adjacency)
@@ -206,7 +213,7 @@ rayleigh_selection <- function(g2, f, shift = 0.0, num_perms = 1000, seed = 10, 
     ph$R0 <- qt[1]
     ph$p0 <- (sum(qt<=qt[1])-1.0)/num_perms
     if (L1) {
-      kkv <- kmn$edges
+      kkv <- kmn$edges[,order(diji)]
       kkv <- kkv-matrix(rep(kkv%*%ddv/sum(ddv),dim(kkv)[2]),dim(kkv))
       qlomv <- rowSums(ddv*kkv^2)
       if (sum(abs(qlomv))==0.0) {

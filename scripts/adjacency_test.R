@@ -2,8 +2,9 @@ library('RayleighSelection')
 
 ## open_cover = list(c(1, 2, 3), c(2, 3), c(3, 4), c(5, 6))
 ## open_cover = list(c(5, 6, 3), c(6, 3), c(3, 4), c(1, 2))
-open_cover = list(c(1, 2), c(2, 3), c(3, 4), c(2, 4, 5))
-n = 5
+## open_cover = list(c(1, 2), c(2, 3), c(3, 4), c(2, 4, 5))
+open_cover = list(c(1,4,6,10), c(1,2,7), c(2,3,8), c(3,4,9,10), c(4,5))
+n = 10
 order = 1:n
 complex <- adjacencyCpp(open_cover, order, TRUE)
 
@@ -30,6 +31,8 @@ boundary <- function(simplex, faces) {
   {
     row_idx <- which(apply(faces[,1:n-1,drop=F], 1, function(r) all(r == simplex[-i]) == TRUE), arr.ind=T)
     faces[row_idx, "sign"] <- (-1)**(i+1)
+    row_idx <- which(apply(faces[,1:n-1,drop=F], 1, function(r) all(r == rev(simplex[-i])) == TRUE), arr.ind=T)
+    faces[row_idx, "sign"] <- (-1)**i
   }
 
   faces <- faces[faces$sign != 0, ]

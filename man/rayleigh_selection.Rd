@@ -2,19 +2,17 @@
 % Please edit documentation in R/rayleigh_selection.R
 \name{rayleigh_selection}
 \alias{rayleigh_selection}
-\title{Ranks features using Rayleigh quotients.}
+\title{Ranks features using the Combinatorial Laplacian Score for 0- and 1-forms.}
 \usage{
-rayleigh_selection(g2, f, shift = 0, num_perms = 1000, seed = 10,
-  num_cores = 1, adjacency = FALSE)
+rayleigh_selection(g2, f, num_perms = 1000, seed = 10, num_cores = 1,
+  one_forms = TRUE)
 }
 \arguments{
-\item{g2}{an object of the class \code{simplicial} containing the nerve complex.}
+\item{g2}{an object of the class \code{simplicial} containing the nerve or clique complex.}
 
 \item{f}{a numeric vector or matrix specifying one or more functions with support on
 the set of points whose significance will be assesed in the simplicial complex. Each
 column corresponds to a point and each row specifies a different function.}
-
-\item{shift}{real number specifying a shift that is added to \code{f}. By default is set to 0.}
 
 \item{num_perms}{number of permutations used to build the null distribution for each
 feature. By default is set to 1000.}
@@ -25,25 +23,31 @@ By default is set to 10.}
 \item{num_cores}{integer specifying the number of cores to be used in the computation. By
 default only one core is used.}
 
-\item{adjacency}{when set to \code{TRUE} the adjacency matrix is used instead of the Laplacian,
-as in Rizvi, Camara, et al. Nat. Biotechnol. 35 (2017). By default is set to \code{FALSE}.}
+\item{one_forms}{when set FALSE only the Combinatorial Laplacian Score for 0-forms is
+computed. By default is set to TRUE.}
 }
 \value{
-Returns a data frame with the value of the Rayleigh quotient score, its p-values, and
-its value adjusted for multiple hypotheis testing using Benjamini-Hochberg procedure for each
-feature.
+Returns a data frame with the value of the Combinatorial Laplacian Score for 0- and 1-forms,
+the p-values, and the q-values computed using Benjamini-Hochberg procedure.
 }
 \description{
-Given a nerve complex and a set of features consisting on functions with support on
+Given a nerve or a clique complex and a set of features consisting of functions with support on
 the set of points underlying the complex, it asseses the significance of each feature
-in the simplicial complex by computing the Rayleigh quotient of the function with
-respect to the combinatorial Laplace operator of the complex and comparing it with
-the null distribution which results from reshufling the values of the function across
-the point cloud.
+in the simplicial complex by computing its scalar and vectorial Combinatorial Laplacian
+Score and comparing it with the null distribution that results from reshufling many times the values of
+the function across the point cloud. For nerve complexes, feature functions induce 0- and
+1-forms in the complex by averaging the function across the points associated to 0- and 1-simplices
+respectively. For clique complexes, feature functions are directly 0-forms in the complex and 1-forms
+are obtained by averaging the function across the two vertices connected by each edge.
 }
 \examples{
+# Example 1
 library(RayleighSelection)
-# Load pre-processed MNIST test dataset
+gy <- nerve_complex(list(c(1,4,6,10), c(1,2,7), c(2,3,8), c(3,4,9,10), c(4,5)))
+rayleigh_selection(gy,t(as.data.frame(c(0,1,1,0,0,0,0,0,0,1))))
+
+
+# Example 2: MNIST dataset
 data("mnist")
 
 # Compute reduced representation using Laplacian eigenmap of pixels with high variance
@@ -58,14 +62,14 @@ library(TDAmapper)
 mnist_distances <- (1.0 - cor(mnist_top))
 m2 <- mapper2D(distance_matrix = mnist_distances,
                filter_values = list(emb@data@data[,1], emb@data@data[,2]),
-               num_intervals = c(50,50),
+               num_intervals = c(30,30),
                percent_overlap = 35,
                num_bins_when_clustering = 10);
 
 # Compute the nerve complex
 gg <- nerve_complex(m2$points_in_vertex)
 
-# Compute R score, p-value, and q-value for the pixels 201st to 205th
-rayleigh_selection(gg, mnist[201:205,])
+# Compute R score, p-value, and q-value for the pixels 301st to 305th
+rayleigh_selection(gg, mnist[301:305,])
 
 }

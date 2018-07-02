@@ -7,34 +7,36 @@
 using namespace Rcpp;
 
 // adjacencyCpp
-arma::sp_mat adjacencyCpp(List x, bool weight);
-RcppExport SEXP _RayleighSelection_adjacencyCpp(SEXP xSEXP, SEXP weightSEXP) {
+List adjacencyCpp(List x, IntegerVector& feature_order, bool weight);
+RcppExport SEXP _RayleighSelection_adjacencyCpp(SEXP xSEXP, SEXP feature_orderSEXP, SEXP weightSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< List >::type x(xSEXP);
+    Rcpp::traits::input_parameter< IntegerVector& >::type feature_order(feature_orderSEXP);
     Rcpp::traits::input_parameter< bool >::type weight(weightSEXP);
-    rcpp_result_gen = Rcpp::wrap(adjacencyCpp(x, weight));
+    rcpp_result_gen = Rcpp::wrap(adjacencyCpp(x, feature_order, weight));
     return rcpp_result_gen;
 END_RCPP
 }
 // pushCpp
-arma::mat pushCpp(arma::vec v, List x, SEXP perm);
-RcppExport SEXP _RayleighSelection_pushCpp(SEXP vSEXP, SEXP xSEXP, SEXP permSEXP) {
+List pushCpp(arma::vec v, List x, SEXP perm, arma::sp_mat adjacency);
+RcppExport SEXP _RayleighSelection_pushCpp(SEXP vSEXP, SEXP xSEXP, SEXP permSEXP, SEXP adjacencySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::vec >::type v(vSEXP);
     Rcpp::traits::input_parameter< List >::type x(xSEXP);
     Rcpp::traits::input_parameter< SEXP >::type perm(permSEXP);
-    rcpp_result_gen = Rcpp::wrap(pushCpp(v, x, perm));
+    Rcpp::traits::input_parameter< arma::sp_mat >::type adjacency(adjacencySEXP);
+    rcpp_result_gen = Rcpp::wrap(pushCpp(v, x, perm, adjacency));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_RayleighSelection_adjacencyCpp", (DL_FUNC) &_RayleighSelection_adjacencyCpp, 2},
-    {"_RayleighSelection_pushCpp", (DL_FUNC) &_RayleighSelection_pushCpp, 3},
+    {"_RayleighSelection_adjacencyCpp", (DL_FUNC) &_RayleighSelection_adjacencyCpp, 3},
+    {"_RayleighSelection_pushCpp", (DL_FUNC) &_RayleighSelection_pushCpp, 4},
     {NULL, NULL, 0}
 };
 

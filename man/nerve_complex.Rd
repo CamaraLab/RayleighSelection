@@ -4,13 +4,11 @@
 \alias{nerve_complex}
 \title{Generates the nerve complex of an open cover.}
 \usage{
-nerve_complex(open_cover, weight = TRUE)
+nerve_complex(open_cover)
 }
 \arguments{
 \item{open_cover}{a list of open sets with \code{open_cover[[i]]} a vector of indices of points
 corresponding to the \code{i}-th open set in the open cover.}
-
-\item{weight}{specificies whether to weight 1-simplicies by Jaccard distance}
 }
 \value{
 An object of the class \code{simplicial}. The class \code{simplicial} inherits from
@@ -18,12 +16,18 @@ the class \code{igraph}.
 }
 \description{
 Takes the open cover of a finite set and returns its nerve
-complex. The output is a simplicial complex that can be used by other functions in the
-\code{RayleighSelection} package.
+complex. The output is a nerve complex that can be used by other functions in the
+\code{RayleighSelection} package. The orientation of simplices is based on the order of the
+points in the point cloud.
 }
 \examples{
+# Example 1
 library(RayleighSelection)
-# Load pre-processed MNIST test dataset
+gy <- nerve_complex(list(c(1,4,6,10), c(1,2,7), c(2,3,8), c(3,4,9,10), c(4,5)))
+plot_skeleton(gy,k=c(0,1,1,0,0,0,0,0,0,1))
+
+
+# Example 2: MNIST dataset
 data("mnist")
 
 # Compute reduced representation using Laplacian eigenmap of pixels with high variance
@@ -38,14 +42,14 @@ library(TDAmapper)
 mnist_distances <- (1.0 - cor(mnist_top))
 m2 <- mapper2D(distance_matrix = mnist_distances,
                filter_values = list(emb@data@data[,1], emb@data@data[,2]),
-               num_intervals = c(50,50),
+               num_intervals = c(30,30),
                percent_overlap = 35,
                num_bins_when_clustering = 10);
 
 # Compute the nerve complex
 gg <- nerve_complex(m2$points_in_vertex)
 
-# Plot the skeleton of the nerve complex colored by the intensity of the 201st pixel
-plot_skeleton(gg, k=as.numeric(mnist[201,]))
+# Plots simplicial complex colored by the value of the 301th pixel
+plot_skeleton(gg, k=mnist[301,])
 
 }

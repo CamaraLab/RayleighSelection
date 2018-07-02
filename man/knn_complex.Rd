@@ -4,14 +4,12 @@
 \alias{knn_complex}
 \title{Generates a k-nearest neighbor complex from a distance matrix.}
 \usage{
-knn_complex(dist, k, t = Inf)
+knn_complex(dist, k)
 }
 \arguments{
 \item{dist}{a distance matrix.}
 
 \item{k}{nunber of nearest neighbors}
-
-\item{t}{parameter of the exponential weights \code{exp(-d_ij**2/t)}. By default it is set to infinity.}
 }
 \value{
 An object of the class \code{simplicial}. The class \code{simplicial} inherits from
@@ -19,12 +17,12 @@ the class \code{igraph}.
 }
 \description{
 Takes a distance matrix, computes a k-nearest neighbor graph, and returns
-a simplicial complex that can be used by other functions in the
+a clique complex that can be used by other functions in the
 \code{RayleighSelection} package.
 }
 \examples{
 library(RayleighSelection)
-# Load MNIST dataset
+# Load MNIST example dataset
 data("mnist")
 
 # Compute a distance matrix for a subset of the MNIST dataset
@@ -35,6 +33,6 @@ mnist_test_distances <- (1.0 - cor(mnist_test))
 gg <- knn_complex(mnist_test, 5)
 
 # Plot the skeleton of the nearest neighbor graph colored by the intensity of the 500th pixel
-plot_skeleton(gg, k=as.numeric(mnist_test[500,]), spring.constant = 1.8)
+plot_skeleton(gg, k=as.numeric(mnist_test[500,]))
 
 }

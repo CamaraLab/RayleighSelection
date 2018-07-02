@@ -17,8 +17,6 @@
 #' By default is set to 10.
 #' @param num_cores integer specifying the number of cores to be used in the computation. By
 #' default only one core is used.
-#' @param adjacency when set to \code{TRUE} the adjacency matrix is used instead of the Laplacian,
-#' as in Rizvi, Camara, et al. Nat. Biotechnol. 35 (2017). By default is set to \code{FALSE}.
 #'
 #' @return Returns a data frame with the value of the Rayleigh quotient score, its p-values, and
 #' its value adjusted for multiple hypotheis testing using Benjamini-Hochberg procedure for each
@@ -52,8 +50,7 @@
 #'
 #' @export
 #'
-rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1,
-                               adjacency = FALSE, L1 = FALSE) {
+rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1, one_forms = TRUE) {
   # Check class of f
   if (class(f) != 'data.frame') {
     f <- as.data.frame(f)
@@ -62,7 +59,7 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
   siz <- sqrt(length(g2$adjacency))
 
   # Compute L_1 Laplacian
-  if (L1) {
+  if (one_forms) {
     zero_simplices <- as.data.frame(matrix(1:siz, siz, 1))
 
     ## get the non-zero indices of the entries in the adjacency matrix, sort them by the row index, and
@@ -166,12 +163,7 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
 
     # Compute L_0 Laplacian
     adj_sym <- g2$adjacency+t(g2$adjacency)
-    if (adjacency) {
-      col <- -(adj_sym)
-    } else {
-      # Scalar Laplace operator
-      col <- diag(zero_weights)-adj_sym
-    }
+    col <- diag(zero_weights)-adj_sym
 
     # Very slow double loop. It should be recoded in C++
     for(i in 1:nrow(one_simplices))
@@ -228,7 +220,7 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
     ph <- NULL
     ph$R0 <- qt[1]
     ph$p0 <- (sum(qt<=qt[1])-1.0)/num_perms
-    if (L1) {
+    if (one_forms) {
       kkv <- kmn$edges[,order(diji)]
       kkv <- kkv-matrix(rep(kkv%*%one_weights/sum(one_weights),dim(kkv)[2]),dim(kkv))
       qlomv <- rowSums(one_weights*kkv^2)
@@ -249,7 +241,7 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
     qh <- NULL
     qh$R0 <- NULL
     qh$p0 <- NULL
-    if (L1) {
+    if (one_forms) {
       qh$R1 <- NULL
       qh$p1 <- NULL
     }
@@ -257,7 +249,7 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
       d <- cornel(fu[m,])
       qh$R0 <- rbind(qh$R0, d$R0)
       qh$p0 <- rbind(qh$p0, d$p0)
-      if (L1) {
+      if (one_forms) {
         qh$R1 <- rbind(qh$R1, d$R1)
         qh$p1 <- rbind(qh$p1, d$p1)
       }
@@ -292,11 +284,11 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
 
   # Adjust for multiple hypothesis testing
   qqh$q0 <- p.adjust(qqh$p0, method = 'BH')
-  if (L1) {
+  if (one_forms) {
     qqh$q1 <- p.adjust(qqh$p1, method = 'BH')
   }
 
-  if (L1) {
+  if (one_forms) {
     return(qqh[,c(1,2,5,3,4,6)])
   } else {
     return(qqh)

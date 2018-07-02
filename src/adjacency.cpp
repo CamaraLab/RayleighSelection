@@ -72,7 +72,7 @@ int find_rank(int vertex,
  * intersections of the open sets.
  */
 // [[Rcpp::export]]
-List adjacencyCpp(List x, IntegerVector& feature_order, bool weight) {
+List adjacencyCpp(List x, IntegerVector& feature_order) {
   List xlist(x);
   int n = xlist.size();
   arma::sp_mat one_simplices(n,n);
@@ -131,13 +131,7 @@ List adjacencyCpp(List x, IntegerVector& feature_order, bool weight) {
           std::swap(idxi, idxj);
         }
 
-        if (weight) {
-          double jidx = (intersection/(loc1_size + loc2_size - intersection));
-          one_simplices(idxi, idxj) = 1.0 - jidx;
-        }
-        else {
-          one_simplices(idxi, idxj) = 1.0;
-        }
+        one_simplices(idxi, idxj) = 1.0;
       };
     };
   };

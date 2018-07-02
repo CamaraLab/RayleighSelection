@@ -6,7 +6,6 @@
 #'
 #' @param dist a distance matrix.
 #' @param epsilon filtration distance at which the complex is generated
-#' @param t parameter of the exponential weights \code{exp(-d_ij**2/t)}. By default it is set to infinity.
 #' @return An object of the class \code{simplicial}. The class \code{simplicial} inherits from
 #' the class \code{igraph}.
 #' @examples
@@ -27,11 +26,9 @@
 #'
 #' @export
 #'
-vr_complex <- function(dist, epsilon, t = Inf)
+vr_complex <- function(dist, epsilon)
 {
   # Builds adjacency matrix and igraph object
   idx <- (dist <= epsilon)
-  adjacency <- idx*dist
-  adjacency <- exp(-adjacency**2/t)*idx
-  return(graph_to_complex(adjacency))
+  return(graph_to_complex(idx))
 }

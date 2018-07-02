@@ -6,7 +6,6 @@
 #'
 #' @param dist a distance matrix.
 #' @param k nunber of nearest neighbors
-#' @param t parameter of the exponential weights \code{exp(-d_ij**2/t)}. By default it is set to infinity.
 #' @return An object of the class \code{simplicial}. The class \code{simplicial} inherits from
 #' the class \code{igraph}.
 #' @examples
@@ -26,7 +25,7 @@
 #'
 #' @export
 #'
-knn_complex <- function(dist, k, t = Inf)
+knn_complex <- function(dist, k)
 {
   kneighbors <- kNN(dist, k)
   id <- kneighbors$id
@@ -39,8 +38,6 @@ knn_complex <- function(dist, k, t = Inf)
     adjacency[cbind(rows, id[,col])] <- 1
     adjacency[cbind(id[,col], rows)] <- 1
   }
-
-  adjacency <- exp(-dist**2/t)*adjacency
 
   return (graph_to_complex(adjacency))
 }

@@ -6,7 +6,6 @@
 #'
 #' @param open_cover a list of open sets with \code{open_cover[[i]]} a vector of indices of points
 #' corresponding to the \code{i}-th open set in the open cover.
-#' @param weight specificies whether to weight 1-simplicies by Jaccard distance
 #' @return An object of the class \code{simplicial}. The class \code{simplicial} inherits from
 #' the class \code{igraph}.
 #' @examples
@@ -38,25 +37,20 @@
 #'
 #' @export
 #'
-nerve_complex <- function(open_cover, weight = TRUE) {
+nerve_complex <- function(open_cover) {
   # Builds adjacency matrix and igraph object
   kal <- which(lapply(open_cover, length) %in% 1)
   open_cover[kal] <- NULL
   open_cover <- unique(open_cover)
 
   feature_order <- 1:max(unlist(open_cover))
-  complex <- adjacencyCpp(open_cover, feature_order, weight)
+  complex <- adjacencyCpp(open_cover, feature_order)
   adjacency <- Matrix(complex$one_simplices, sparse = TRUE)
 
   sorted_order <- order(as.numeric(complex$order))
   adjacency <- adjacency[sorted_order, sorted_order]
 
-  if (!weight)
-  {
-      weight <- 'NULL'
-  }
-
-  g2 <- graph.adjacency(adjacency, mode="directed", weighted=weight)
+  g2 <- graph.adjacency(adjacency, mode="directed", weighted='NULL')
 
   # Decorates the graph to include node sizes, color, etc.
   V(g2)$size <- log2(as.numeric(lapply(open_cover, length))+1)

@@ -1,9 +1,9 @@
-#' Plots the 1-skeleton of a simplicial complex.
+#' Plots a simplicial complex.
 #'
-#' Plots the 1-skeleton graph of a nerve complex and colors the vertices according
-#' to the value of one or more functions with support on the underlying set of points. The 1-skeleton
-#' is visualized using a force-directed graph layout with node sizes proportional to the
-#' number of points in the corresponding open set.
+#' Plots the 0-, 1- and 2-simplices of a simplicial complex and colors the vertices according
+#' to the value of one or more functions with support on the underlying set of points. The complex
+#' is visualized using a force-directed graph layout acting on the 1-skeleton. Node sizes are
+#' proportional to the number of points in the corresponding open set.
 #'
 #' @param g2 an object of the class \code{simplicial} containing the nerve complex.
 #' @param r a numeric vector or matrix specifying one or more functions with
@@ -23,14 +23,19 @@
 #' to 1500. A larger value may be required for optimal visualization of large graphs.
 #' @param file if specified, exports the 1-skeleton to graphviz DOT \code{file}
 #' @examples
+#' # Example 1
 #' library(RayleighSelection)
-#' # Load pre-processed MNIST test dataset
+#' gy <- nerve_complex(list(c(1,4,6,10), c(1,2,7), c(2,3,8), c(3,4,9,10), c(4,5)))
+#' plot_skeleton(gy,k=c(0,1,1,0,0,0,0,0,0,1))
+#'
+#'
+#' # Example 2: MNIST dataset
 #' data("mnist")
 #'
 #' # Compute reduced representation using Laplacian eigenmap of pixels with high variance
 #' library(dimRed)
 #' leim <- LaplacianEigenmaps()
-#' mnist_top <- lfw[apply(mnist, 1, var) > 10000,]
+#' mnist_top <- mnist[apply(mnist, 1, var) > 10000,]
 #' emb <- leim@fun(as(t(mnist_top), "dimRedData"), leim@stdpars)
 #'
 #' # Compute Mapper representation using the Laplacian eigenmap as an auxiliary function and correlation
@@ -39,15 +44,15 @@
 #' mnist_distances <- (1.0 - cor(mnist_top))
 #' m2 <- mapper2D(distance_matrix = mnist_distances,
 #'                filter_values = list(emb@data@data[,1], emb@data@data[,2]),
-#'                num_intervals = c(50,50),
+#'                num_intervals = c(30,30),
 #'                percent_overlap = 35,
 #'                num_bins_when_clustering = 10);
 #'
 #' # Compute the nerve complex
 #' gg <- nerve_complex(m2$points_in_vertex)
 #'
-#' # Plot the skeleton of the nerve complex colored by the intensity of the 201st pixel
-#' plot_skeleton(gg, k=as.numeric(mnist[201,]))
+#' # Plots simplicial complex colored by the value of the 301th pixel
+#' plot_skeleton(gg, k=mnist[301,])
 #'
 #' @export
 #'

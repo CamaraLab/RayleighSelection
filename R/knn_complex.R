@@ -1,7 +1,7 @@
 #' Generates a k-nearest neighbor complex from a distance matrix.
 #'
 #' Takes a distance matrix, computes a k-nearest neighbor graph, and returns
-#' a simplicial complex that can be used by other functions in the
+#' a clique complex that can be used by other functions in the
 #' \code{RayleighSelection} package.
 #'
 #' @param dist a distance matrix.
@@ -10,7 +10,7 @@
 #' the class \code{igraph}.
 #' @examples
 #' library(RayleighSelection)
-#' # Load MNIST dataset
+#' # Load MNIST example dataset
 #' data("mnist")
 #'
 #' # Compute a distance matrix for a subset of the MNIST dataset
@@ -21,7 +21,7 @@
 #' gg <- knn_complex(mnist_test, 5)
 #'
 #' # Plot the skeleton of the nearest neighbor graph colored by the intensity of the 500th pixel
-#' plot_skeleton(gg, k=as.numeric(mnist_test[500,]), spring.constant = 1.8)
+#' plot_skeleton(gg, k=as.numeric(mnist_test[500,]))
 #'
 #' @export
 #'

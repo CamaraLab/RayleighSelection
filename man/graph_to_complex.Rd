@@ -14,12 +14,12 @@ An object of the class \code{simplicial}. The class \code{simplicial} inherits f
 the class \code{igraph}.
 }
 \description{
-Takes the adjacency matrix of a graph and returns a simplicial complex that can be used
+Takes the adjacency matrix of a graph and returns a clique complex that can be used
 by other functions in the \code{RayleighSelection} package.
 }
 \examples{
 library(RayleighSelection)
-# Load MNIST dataset
+# Load MNIST example dataset
 data("mnist")
 
 # Compute a correlation matrix for a subset of the LFW dataset using only pixels with high variance
@@ -31,6 +31,6 @@ mnist_test_distances <- cor(mnist_test_top)
 gg <- graph_to_complex(mnist_test_distances)
 
 # Plot the skeleton of the simplicial complex colored by the intensity of the 500th pixel
-plot_skeleton(gg, k=as.numeric(mnist_test[500,]), spring.constant = 0.02, seed = 3)
+plot_skeleton(gg, k=as.numeric(mnist_test[500,]))
 
 }

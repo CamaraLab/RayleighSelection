@@ -35,7 +35,7 @@ graph_to_complex <- function(adjacency)
   g2$order <- seq(1, sqrt(length(adjacency)), 1)
   g2$adjacency <- get.adjacency(g2, sparse = TRUE)
   g2$adjacency[lower.tri(g2$adjacency)] <- 0
-  #g2$one_simplices <- g2$adjacency
+  g2$one_simplices <- g2$adjacency
   g2$two_simplices <- list()
   siz <- sqrt(length(g2$adjacency))
   for (i in 1:siz){

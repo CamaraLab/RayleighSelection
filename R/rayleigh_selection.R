@@ -61,28 +61,14 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
 
   siz <- sqrt(length(g2$adjacency))
 
-  # Compute L_0 Laplacian
-  adj_sym <- g2$adjacency+t(g2$adjacency)
-  if (adjacency) {
-    dd <- rep(1, siz)
-    col <- -(adj_sym)
-  } else {
-    # Scalar Laplace operator
-    dd <- rowSums(adj_sym)
-    col <- diag(dd)-adj_sym
-  }
-
   # Compute L_1 Laplacian
   if (L1) {
-    ddv <- rep(1,sum(g2$adjacency>0))
     zero_simplices <- as.data.frame(matrix(1:siz, siz, 1))
-    one_simplices_l <- adj_sym
-    one_simplices_l[lower.tri(one_simplices_l)] <- 0
 
     ## get the non-zero indices of the entries in the adjacency matrix, sort them by the row index, and
     ## convert the row index into the vertex using the order of the vertices, since the adjacency matrix returned
     ## by adjacencyCpp will have rows and columns labeled by the order
-    one_simplices_idx <- data.frame(which(as.matrix(one_simplices_l != 0), arr.ind=T))
+    one_simplices_idx <- data.frame(which(as.matrix(g2$one_simplices != 0), arr.ind=T))
     one_simplices_idx <- one_simplices_idx[with(one_simplices_idx, order(row)), ]
     one_simplices <- data.frame(t(apply(one_simplices_idx, 1, function(x) g2$order[unlist(x)])))
     rownames(one_simplices) <- NULL
@@ -118,15 +104,27 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
     ## 2-simplices <i, j, k> by checking which matrices in the list are non-zero
     idxs <- which(lapply(g2$two_simplices, any) == TRUE, arr.ind=T)
 
+    # compute weights for 1-simplices
+    one_weights <- rep(0,nrow(one_simplices))
+    for(idx in idxs)
+    {
+      edges <- which(as.matrix(g2$two_simplices[[idx]] != 0), arr.ind=T)
+      two_simplices <- t(apply(edges, 1, function(edge) c(idx, edge)))
+      bound <- apply(two_simplices, 1, function(two_simplex) {boundary(two_simplex, one_simplices)})
+      for (mkj in bound) {
+        one_weights[as.numeric(rownames(mkj))] <- (one_weights[as.numeric(rownames(mkj))] + 1)
+      }
+    }
+    one_weights[one_weights==0] <- 1
+
     for(idx in idxs)
     {
       ## given the i'th vertex (idx) of the two-simplices, find all the j and k vertices by looking for non-zero
-      ## entries of the i'th matrix in the list of matrices, create the vecter of two_simplices <i, j, k>,
+      ## entries of the i'th matrix in the list of matrices, create the vector of two_simplices <i, j, k>,
       ## and compute their boundaries
       edges <- which(as.matrix(g2$two_simplices[[idx]] != 0), arr.ind=T)
       two_simplices <- t(apply(edges, 1, function(edge) c(idx, edge)))
       bound <- apply(two_simplices, 1, function(two_simplex) {boundary(two_simplex, one_simplices)})
-
       lapply(bound, function(two_simplex_boundary) {
         ## for each two simplex boundary computed above, compute l1_up
         for(i in rownames(two_simplex_boundary))
@@ -144,20 +142,38 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
             if(i == j)
             {
               ## need to use <<- since this is a closure
-              l1_up[idxi, idxi] <<- l1_up[idxi, idxi] + 1
+              l1_up[idxi, idxi] <<- l1_up[idxi, idxi] + 1/one_weights[idxi]
             }
             else
             {
               ## col_sign = sgn(F', d(Fbar))
               col_sign <- two_simplex_boundary[j, "sign"]
-              l1_up[idxi, idxj] <<- row_sign*col_sign
-              l1_up[idxj, idxi] <<- row_sign*col_sign
+              l1_up[idxi, idxj] <<- row_sign*col_sign/one_weights[idxi]
+              l1_up[idxj, idxi] <<- row_sign*col_sign/one_weights[idxj]
             }
           }
         }
       })
     }
 
+    # compute weights of 0-simplices
+    zero_weights <- rep(0,siz)
+    for(i in 1:nrow(one_simplices))
+    {
+      zero_weights[one_simplices[i,1]] <- zero_weights[one_simplices[i,1]] + one_weights[i]
+      zero_weights[one_simplices[i,2]] <- zero_weights[one_simplices[i,2]] + one_weights[i]
+    }
+
+    # Compute L_0 Laplacian
+    adj_sym <- g2$adjacency+t(g2$adjacency)
+    if (adjacency) {
+      col <- -(adj_sym)
+    } else {
+      # Scalar Laplace operator
+      col <- diag(zero_weights)-adj_sym
+    }
+
+    # Very slow double loop. It should be recoded in C++
     for(i in 1:nrow(one_simplices))
     {
       for(j in 1:nrow(one_simplices))
@@ -168,7 +184,7 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
         }
         else if(i == j)
         {
-          l1_down[i, j] <- l1_down[i, j] + length(one_simplices[i,])
+          l1_down[i, j] <- l1_down[i, j] + sum(one_weights[i]/zero_weights[as.numeric(one_simplices[i,])])
         }
         else
         {
@@ -190,20 +206,19 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
           row <- which(ffp[,1,drop=F] == zero_simplex[1,], arr.ind=T)[1]
           sgn_e_fp <- ffp[row, ]$sign
 
-          l1_down[i, j] <- sgn_e_f*sgn_e_fp
-          l1_down[j, i] <- sgn_e_f*sgn_e_fp
+          l1_down[i, j] <- sgn_e_f*sgn_e_fp*one_weights[j]/zero_weights[as.numeric(zero_simplex)]
+          l1_down[j, i] <- sgn_e_f*sgn_e_fp*one_weights[i]/zero_weights[as.numeric(zero_simplex)]
         }
       }
     }
-
   }
 
   # Evaluates R and p for a feature fo
   cornel <- function(fo) {
     kmn<-pushCpp(as.numeric(fo), g2$points_in_vertex, num_perms, g2$adjacency)
     kk <- kmn$vertices
-    kk <- kk-matrix(rep(kk%*%dd/sum(dd),dim(kk)[2]),dim(kk))
-    qlom <- rowSums(dd*kk^2)
+    kk <- kk-matrix(rep(kk%*%zero_weights/sum(zero_weights),dim(kk)[2]),dim(kk))
+    qlom <- rowSums(zero_weights*kk^2)
     if (sum(abs(qlom))==0.0) {
       qt <- rep(Inf,length(qlom))
     } else {
@@ -215,8 +230,8 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
     ph$p0 <- (sum(qt<=qt[1])-1.0)/num_perms
     if (L1) {
       kkv <- kmn$edges[,order(diji)]
-      kkv <- kkv-matrix(rep(kkv%*%ddv/sum(ddv),dim(kkv)[2]),dim(kkv))
-      qlomv <- rowSums(ddv*kkv^2)
+      kkv <- kkv-matrix(rep(kkv%*%one_weights/sum(one_weights),dim(kkv)[2]),dim(kkv))
+      qlomv <- rowSums(one_weights*kkv^2)
       if (sum(abs(qlomv))==0.0) {
         qtv <- rep(Inf,length(qlomv))
       } else {

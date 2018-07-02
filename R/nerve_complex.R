@@ -59,14 +59,14 @@ nerve_complex <- function(open_cover, weight = TRUE) {
   g2 <- graph.adjacency(adjacency, mode="directed", weighted=weight)
 
   # Decorates the graph to include node sizes, color, etc.
-  V(g2)$size <- log2(as.numeric(lapply(open_cover, length))+1)*2.0
+  V(g2)$size <- log2(as.numeric(lapply(open_cover, length))+1)
   V(g2)$label <- ""
   V(g2)$frame.color <- "black"
 
   # Enriches the class with information about the open cover and adjacency matrix
   g2$points_in_vertex <- open_cover
   g2$adjacency <- get.adjacency(g2, sparse = TRUE)
-  #g2$one_simplices <- complex$one_simplices
+  g2$one_simplices <- complex$one_simplices
   g2$two_simplices <- complex$two_simplices
   g2$order <- complex$order
 

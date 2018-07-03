@@ -73,7 +73,7 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
     ## get the non-zero indices of the entries in the adjacency matrix, sort them by the row index, and
     ## convert the row index into the vertex using the order of the vertices, since the adjacency matrix returned
     ## by adjacencyCpp will have rows and columns labeled by the order
-    one_simplices_idx <- data.frame(which(as.matrix(g2$one_simplices != 0), arr.ind=T))
+    one_simplices_idx <- data.frame(which(as.matrix(g2$one_simplices != 0), arr.ind=T), row.names = NULL)
     one_simplices_idx <- one_simplices_idx[with(one_simplices_idx, order(row)), ]
     one_simplices <- data.frame(t(apply(one_simplices_idx, 1, function(x) g2$order[unlist(x)])))
     rownames(one_simplices) <- NULL

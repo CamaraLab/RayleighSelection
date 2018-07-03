@@ -4,6 +4,7 @@
 #' by other functions in the \code{RayleighSelection} package.
 #'
 #' @param adjacency a weighted adjacency matrix.
+#' @param clique if set to FALSE the computation of 2-simplices is skipped.
 #' @return An object of the class \code{simplicial}. The class \code{simplicial} inherits from
 #' the class \code{igraph}.
 #' @examples
@@ -24,7 +25,7 @@
 #'
 #' @export
 #'
-graph_to_complex <- function(adjacency)
+graph_to_complex <- function(adjacency, clique=TRUE)
 {
   # Builds igraph object
   diag(adjacency) <- 0
@@ -41,8 +42,10 @@ graph_to_complex <- function(adjacency)
   for (i in 1:siz){
     g2$two_simplices[[i]] <- Matrix(0, siz, siz, sparse=TRUE)
   }
-  for (m in suppressWarnings(cliques(g2,3,3))) {
-    g2$two_simplices[[as.numeric(m[1])]][as.numeric(m[2]), as.numeric(m[3])] <- 1
+  if (clique) {
+    for (m in suppressWarnings(cliques(g2,3,3))) {
+      g2$two_simplices[[as.numeric(m[1])]][as.numeric(m[2]), as.numeric(m[3])] <- 1
+    }
   }
 
   # Decorates the graph to include node sizes, color, etc.

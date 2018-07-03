@@ -6,6 +6,7 @@
 #'
 #' @param dist a distance matrix.
 #' @param k nunber of nearest neighbors
+#' @param clique if set to FALSE the computation of 2-simplices is skipped.
 #' @return An object of the class \code{simplicial}. The class \code{simplicial} inherits from
 #' the class \code{igraph}.
 #' @examples
@@ -25,7 +26,7 @@
 #'
 #' @export
 #'
-knn_complex <- function(dist, k)
+knn_complex <- function(dist, k, clique=TRUE)
 {
   kneighbors <- kNN(dist, k)
   id <- kneighbors$id
@@ -39,5 +40,5 @@ knn_complex <- function(dist, k)
     adjacency[cbind(id[,col], rows)] <- 1
   }
 
-  return (graph_to_complex(adjacency))
+  return (graph_to_complex(adjacency, clique))
 }

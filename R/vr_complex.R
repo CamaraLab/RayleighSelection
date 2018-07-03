@@ -6,6 +6,7 @@
 #'
 #' @param dist a distance matrix.
 #' @param epsilon filtration distance at which the complex is generated
+#' @param clique if set to FALSE the computation of 2-simplices is skipped.
 #' @return An object of the class \code{simplicial}. The class \code{simplicial} inherits from
 #' the class \code{igraph}.
 #' @examples
@@ -26,9 +27,9 @@
 #'
 #' @export
 #'
-vr_complex <- function(dist, epsilon)
+vr_complex <- function(dist, epsilon, clique=TRUE)
 {
   # Builds adjacency matrix and igraph object
   idx <- (dist <= epsilon)
-  return(graph_to_complex(idx))
+  return(graph_to_complex(idx,clique))
 }

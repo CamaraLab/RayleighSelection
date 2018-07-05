@@ -58,7 +58,8 @@
 #'
 #' @export
 #'
-rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1, one_forms = TRUE) {
+rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1, one_forms = TRUE,
+                               weights = TRUE) {
   # Check class of f
   if (class(f) != 'data.frame') {
     f <- as.data.frame(f)
@@ -66,9 +67,6 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
 
   siz <- sqrt(length(g2$adjacency))
 
-  # Compute weights
-
-  # Compute L_1 Laplacian
   zero_simplices <- as.data.frame(matrix(1:siz, siz, 1))
 
   ## get the non-zero indices of the entries in the adjacency matrix, sort them by the row index, and
@@ -109,24 +107,29 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
   idxs <- which(lapply(g2$two_simplices, any) == TRUE, arr.ind=T)
 
   # compute weights for 1-simplices
-  one_weights <- rep(0,nrow(one_simplices))
-  for(idx in idxs)
-  {
-    edges <- which(as.matrix(g2$two_simplices[[idx]] != 0), arr.ind=T)
-    two_simplices <- t(apply(edges, 1, function(edge) c(idx, edge)))
-    bound <- apply(two_simplices, 1, function(two_simplex) {boundary(two_simplex, one_simplices)})
-    for (mkj in bound) {
-      one_weights[as.numeric(rownames(mkj))] <- (one_weights[as.numeric(rownames(mkj))] + 1)
+  if (weights) {
+    one_weights <- rep(0,nrow(one_simplices))
+    for(idx in idxs)
+    {
+      edges <- which(as.matrix(g2$two_simplices[[idx]] != 0), arr.ind=T)
+      two_simplices <- t(apply(edges, 1, function(edge) c(idx, edge)))
+      bound <- apply(two_simplices, 1, function(two_simplex) {boundary(two_simplex, one_simplices)})
+      for (mkj in bound) {
+        one_weights[as.numeric(rownames(mkj))] <- (one_weights[as.numeric(rownames(mkj))] + 1)
+      }
     }
-  }
-  one_weights[one_weights==0] <- 1
+    one_weights[one_weights==0] <- 1
 
-  # compute weights of 0-simplices
-  zero_weights <- rep(0,siz)
-  for(i in 1:nrow(one_simplices))
-  {
-    zero_weights[one_simplices[i,1]] <- zero_weights[one_simplices[i,1]] + one_weights[i]
-    zero_weights[one_simplices[i,2]] <- zero_weights[one_simplices[i,2]] + one_weights[i]
+    # compute weights of 0-simplices
+    zero_weights <- rep(0,siz)
+    for(i in 1:nrow(one_simplices))
+    {
+      zero_weights[one_simplices[i,1]] <- zero_weights[one_simplices[i,1]] + one_weights[i]
+      zero_weights[one_simplices[i,2]] <- zero_weights[one_simplices[i,2]] + one_weights[i]
+    }
+  } else {
+    one_weights <- rep(1,nrow(one_simplices))
+    zero_weights <- rep(1,siz)
   }
 
   # Compute L_0 Laplacian

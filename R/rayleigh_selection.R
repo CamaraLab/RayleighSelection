@@ -134,7 +134,11 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
 
   # Compute L_0 Laplacian
   adj_sym <- g2$adjacency+t(g2$adjacency)
-  col <- diag(zero_weights)-adj_sym
+  if (weights) {
+    col <- diag(zero_weights)-adj_sym
+  } else {
+    col <- diag(rowSums(adj_sym))-adj_sym
+  }
 
   if (one_forms) {
     l1_up <- matrix(0, n, n)

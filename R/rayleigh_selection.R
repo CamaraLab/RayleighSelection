@@ -119,26 +119,21 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
       }
     }
     one_weights[one_weights==0] <- 1
-
-    # compute weights of 0-simplices
-    zero_weights <- rep(0,siz)
-    for(i in 1:nrow(one_simplices))
-    {
-      zero_weights[one_simplices[i,1]] <- zero_weights[one_simplices[i,1]] + one_weights[i]
-      zero_weights[one_simplices[i,2]] <- zero_weights[one_simplices[i,2]] + one_weights[i]
-    }
   } else {
     one_weights <- rep(1,nrow(one_simplices))
-    zero_weights <- rep(1,siz)
+  }
+
+  # compute weights of 0-simplices
+  zero_weights <- rep(0,siz)
+  for(i in 1:nrow(one_simplices))
+  {
+    zero_weights[one_simplices[i,1]] <- zero_weights[one_simplices[i,1]] + one_weights[i]
+    zero_weights[one_simplices[i,2]] <- zero_weights[one_simplices[i,2]] + one_weights[i]
   }
 
   # Compute L_0 Laplacian
   adj_sym <- g2$adjacency+t(g2$adjacency)
-  if (weights) {
-    col <- diag(zero_weights)-adj_sym
-  } else {
-    col <- diag(rowSums(adj_sym))-adj_sym
-  }
+  col <- diag(zero_weights)-adj_sym
 
   if (one_forms) {
     l1_up <- matrix(0, n, n)

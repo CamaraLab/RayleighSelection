@@ -5,8 +5,8 @@ adjacencyCpp <- function(x, feature_order) {
     .Call('_RayleighSelection_adjacencyCpp', PACKAGE = 'RayleighSelection', x, feature_order)
 }
 
-l1down <- function(one_simplices) {
-    .Call('_RayleighSelection_l1down', PACKAGE = 'RayleighSelection', one_simplices)
+l1down <- function(one_simplices, zero_weights, one_weights) {
+    .Call('_RayleighSelection_l1down', PACKAGE = 'RayleighSelection', one_simplices, zero_weights, one_weights)
 }
 
 pushCpp <- function(v, x, perm, adjacency) {

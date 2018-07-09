@@ -19,13 +19,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // l1down
-arma::mat l1down(arma::mat one_simplices);
-RcppExport SEXP _RayleighSelection_l1down(SEXP one_simplicesSEXP) {
+arma::mat l1down(arma::mat one_simplices, arma::vec zero_weights, arma::vec one_weights);
+RcppExport SEXP _RayleighSelection_l1down(SEXP one_simplicesSEXP, SEXP zero_weightsSEXP, SEXP one_weightsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::mat >::type one_simplices(one_simplicesSEXP);
-    rcpp_result_gen = Rcpp::wrap(l1down(one_simplices));
+    Rcpp::traits::input_parameter< arma::vec >::type zero_weights(zero_weightsSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type one_weights(one_weightsSEXP);
+    rcpp_result_gen = Rcpp::wrap(l1down(one_simplices, zero_weights, one_weights));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -46,7 +48,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_RayleighSelection_adjacencyCpp", (DL_FUNC) &_RayleighSelection_adjacencyCpp, 2},
-    {"_RayleighSelection_l1down", (DL_FUNC) &_RayleighSelection_l1down, 1},
+    {"_RayleighSelection_l1down", (DL_FUNC) &_RayleighSelection_l1down, 3},
     {"_RayleighSelection_pushCpp", (DL_FUNC) &_RayleighSelection_pushCpp, 4},
     {NULL, NULL, 0}
 };

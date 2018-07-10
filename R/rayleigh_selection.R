@@ -21,6 +21,8 @@
 #' default only one core is used.
 #' @param one_forms when set FALSE only the Combinatorial Laplacian Score for 0-forms is
 #' computed. By default is set to TRUE.
+#' @param weights when set to TRUE it takes 2-simplices into account when computing weights.
+#' By default is set to FALSE.
 #'
 #' @return Returns a data frame with the value of the Combinatorial Laplacian Score for 0- and 1-forms,
 #' the p-values, and the q-values computed using Benjamini-Hochberg procedure.
@@ -59,7 +61,7 @@
 #' @export
 #'
 rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1, one_forms = TRUE,
-                               weights = TRUE) {
+                               weights = FALSE) {
   # Check class of f
   if (class(f) != 'data.frame') {
     f <- as.data.frame(f)
@@ -178,44 +180,7 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
       })
     }
 
-    # Very slow double loop. It should be recoded in C++
-    for(i in 1:nrow(one_simplices))
-    {
-      for(j in 1:nrow(one_simplices))
-      {
-        if(i > j)
-        {
-          next
-        }
-        else if(i == j)
-        {
-          l1_down[i, j] <- l1_down[i, j] + sum(one_weights[i]/zero_weights[as.numeric(one_simplices[i,])])
-        }
-        else
-        {
-          zero_simplex <- intersect(one_simplices[i,], one_simplices[j, ])
-          if(length(zero_simplex) == 0)
-          {
-            next
-          }
-
-          ## if the i'th and j'th 1-simplices share a 0-simplex (zero_simplex) compute the boundary of the two
-          ## 1-simplices
-          ff <- boundary(one_simplices[i,], zero_simplices)
-          ffp <- boundary(one_simplices[j, ], zero_simplices)
-
-          ## get the sign of the zero_simplex in the two boundaries,
-          ## l1_down = sgn(E, d(F))*sgn(E, d(F'))
-          row <- which(ff[,1,drop=F] == zero_simplex[1,], arr.ind=T)[1]
-          sgn_e_f <- ff[row,]$sign
-          row <- which(ffp[,1,drop=F] == zero_simplex[1,], arr.ind=T)[1]
-          sgn_e_fp <- ffp[row, ]$sign
-
-          l1_down[i, j] <- sgn_e_f*sgn_e_fp*one_weights[j]/zero_weights[as.numeric(zero_simplex)]
-          l1_down[j, i] <- sgn_e_f*sgn_e_fp*one_weights[i]/zero_weights[as.numeric(zero_simplex)]
-        }
-      }
-    }
+    l1_down <- l1down(as.matrix(one_simplices), zero_weights, one_weights)
   }
 
   # Evaluates R and p for a feature fo

@@ -185,7 +185,7 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
 
   # Evaluates R and p for a feature fo
   cornel <- function(fo) {
-    kmn<-pushCpp(as.numeric(fo), g2$points_in_vertex, num_perms, g2$adjacency)
+    kmn<-pushCpp(as.numeric(fo), g2$points_in_vertex, num_perms, g2$adjacency, one_forms)
     kk <- kmn$vertices
     kk <- kk-matrix(rep(kk%*%zero_weights/sum(zero_weights),dim(kk)[2]),dim(kk))
     qlom <- rowSums(zero_weights*kk^2)

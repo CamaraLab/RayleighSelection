@@ -9,13 +9,14 @@ using namespace Rcpp;
  */
 
 // [[Rcpp::export]]
-List pushCpp(arma::vec v, List x, SEXP perm, arma::sp_mat adjacency) {
+List pushCpp(arma::vec v, List x, SEXP perm, arma::sp_mat adjacency, SEXP one_forms) {
   List xlist(x);
   arma::vec xv(v);
   arma::vec co = xv;
   int n = xlist.size();
   int nn = arma::nonzeros(adjacency).size();
   int perms = as<int >(perm);
+  bool one_form = as<bool >(one_forms);
   arma::mat res_vertices = arma::zeros(perms+1, n);
   arma::mat res_edges = arma::zeros(perms+1, nn);
 
@@ -32,31 +33,34 @@ List pushCpp(arma::vec v, List x, SEXP perm, arma::sp_mat adjacency) {
 
       res_vertices(i,j) /= u;
 
-      arma::mat row(adjacency.row(j));
-      arma::uvec idxs = arma::find(row != 0);
-
-      if (idxs.size() == 0)
+      if (one_form)
       {
-        continue;
-      }
+        arma::mat row(adjacency.row(j));
+        arma::uvec idxs = arma::find(row != 0);
 
-      for(arma::uvec::iterator it = idxs.begin(); it != idxs.end(); ++it)
-      {
-        arma::ivec o2 = xlist[*it];
-        arma::ivec edge_cover = arma::intersect(o1, o2);
-        int vn = edge_cover.size();
-        if (vn == 0) {
-          edge_cover = arma::join_cols(o1, o2);
-          vn = edge_cover.size();
-        }
-
-        for(int k = 0; k < vn; k++)
+        if (idxs.size() == 0)
         {
-          res_edges(i, kk) += co(edge_cover[k]-1);
+          continue;
         }
 
-        res_edges(i, kk) /= vn;
-        ++kk;
+        for(arma::uvec::iterator it = idxs.begin(); it != idxs.end(); ++it)
+        {
+          arma::ivec o2 = xlist[*it];
+          arma::ivec edge_cover = arma::intersect(o1, o2);
+          int vn = edge_cover.size();
+          if (vn == 0) {
+            edge_cover = arma::join_cols(o1, o2);
+            vn = edge_cover.size();
+          }
+
+          for(int k = 0; k < vn; k++)
+          {
+            res_edges(i, kk) += co(edge_cover[k]-1);
+          }
+
+          res_edges(i, kk) /= vn;
+          ++kk;
+        }
       }
     }
 

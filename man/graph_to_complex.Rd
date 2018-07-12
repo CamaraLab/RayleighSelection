@@ -4,10 +4,12 @@
 \alias{graph_to_complex}
 \title{Generates a simplicial complex from a graph.}
 \usage{
-graph_to_complex(adjacency)
+graph_to_complex(adjacency, clique = TRUE)
 }
 \arguments{
 \item{adjacency}{a weighted adjacency matrix.}
+
+\item{clique}{if set to FALSE the computation of 2-simplices is skipped.}
 }
 \value{
 An object of the class \code{simplicial}. The class \code{simplicial} inherits from

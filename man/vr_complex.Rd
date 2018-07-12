@@ -4,12 +4,14 @@
 \alias{vr_complex}
 \title{Generates a Vietoris-Rips complex from a distance matrix.}
 \usage{
-vr_complex(dist, epsilon)
+vr_complex(dist, epsilon, clique = TRUE)
 }
 \arguments{
 \item{dist}{a distance matrix.}
 
 \item{epsilon}{filtration distance at which the complex is generated}
+
+\item{clique}{if set to FALSE the computation of 2-simplices is skipped.}
 }
 \value{
 An object of the class \code{simplicial}. The class \code{simplicial} inherits from

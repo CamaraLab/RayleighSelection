@@ -4,23 +4,23 @@
 \alias{plot_skeleton}
 \title{Plots a simplicial complex.}
 \usage{
-plot_skeleton(g2, r, g, b, k, pushforward = mean, seed = 10,
+plot_skeleton(g2, k, r, g, b, pushforward = mean, seed = 10,
   iterations = 1500, file = "")
 }
 \arguments{
 \item{g2}{an object of the class \code{simplicial} containing the nerve complex.}
 
-\item{r}{a numeric vector or matrix specifying one or more functions with
-support on the set of points that will be mapped to the red channel. Each column
+\item{k}{a numeric vector or matrix specifying one or more functions with
+support on the set of points that will be mapped to the rainbow palette. Each column
 corresponds to a point and each row specifies a different function. If more than one
-function is specified, the average of all rows is considered.}
-
-\item{g}{similar to \code{r} but mapped to the green channel.}
-
-\item{b}{similar to \code{r} but mapped to the blue channel.}
-
-\item{k}{similar to \code{r} but mapped to a rainbow palette. Incompatible with
+function is specified, the average of all rows is considered. Incompatible with
 the parameters \code{r}, \code{g}, and \code{b}.}
+
+\item{r}{similar to \code{k} but mapped to the red channel.}
+
+\item{g}{similar to \code{k} but mapped to the green channel.}
+
+\item{b}{similar to \code{k} but mapped to the blue channel.}
 
 \item{pushforward}{pushforward function that maps \code{r}, \code{g}, \code{b},
 and \code{k} to functions with support on the simplices. By default is set to

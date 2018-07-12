@@ -5,7 +5,7 @@
 \title{Ranks features using the Combinatorial Laplacian Score for 0- and 1-forms.}
 \usage{
 rayleigh_selection(g2, f, num_perms = 1000, seed = 10, num_cores = 1,
-  one_forms = TRUE)
+  one_forms = TRUE, weights = FALSE)
 }
 \arguments{
 \item{g2}{an object of the class \code{simplicial} containing the nerve or clique complex.}
@@ -25,6 +25,9 @@ default only one core is used.}
 
 \item{one_forms}{when set FALSE only the Combinatorial Laplacian Score for 0-forms is
 computed. By default is set to TRUE.}
+
+\item{weights}{when set to TRUE it takes 2-simplices into account when computing weights.
+By default is set to FALSE.}
 }
 \value{
 Returns a data frame with the value of the Combinatorial Laplacian Score for 0- and 1-forms,

@@ -6,14 +6,14 @@
 #' proportional to the number of points in the corresponding open set.
 #'
 #' @param g2 an object of the class \code{simplicial} containing the nerve complex.
-#' @param r a numeric vector or matrix specifying one or more functions with
-#' support on the set of points that will be mapped to the red channel. Each column
+#' @param k a numeric vector or matrix specifying one or more functions with
+#' support on the set of points that will be mapped to the rainbow palette. Each column
 #' corresponds to a point and each row specifies a different function. If more than one
-#' function is specified, the average of all rows is considered.
-#' @param g similar to \code{r} but mapped to the green channel.
-#' @param b similar to \code{r} but mapped to the blue channel.
-#' @param k similar to \code{r} but mapped to a rainbow palette. Incompatible with
+#' function is specified, the average of all rows is considered. Incompatible with
 #' the parameters \code{r}, \code{g}, and \code{b}.
+#' @param r similar to \code{k} but mapped to the red channel.
+#' @param g similar to \code{k} but mapped to the green channel.
+#' @param b similar to \code{k} but mapped to the blue channel.
 #' @param pushforward pushforward function that maps \code{r}, \code{g}, \code{b},
 #' and \code{k} to functions with support on the simplices. By default is set to
 #' \code{mean}. Other choices may slow down the computation substantially.
@@ -56,7 +56,7 @@
 #'
 #' @export
 #'
-plot_skeleton <- function(g2, r, g, b, k, pushforward = mean, seed = 10, iterations = 1500, file="") {
+plot_skeleton <- function(g2, k, r, g, b, pushforward = mean, seed = 10, iterations = 1500, file="") {
   set.seed(seed)
   if (!missing(k)) {
     k1 <- push(k, g2, pushforward)

@@ -9,7 +9,7 @@ l1down <- function(one_simplices, zero_weights, one_weights) {
     .Call('_RayleighSelection_l1down', PACKAGE = 'RayleighSelection', one_simplices, zero_weights, one_weights)
 }
 
-pushCpp <- function(v, x, perm, adjacency) {
-    .Call('_RayleighSelection_pushCpp', PACKAGE = 'RayleighSelection', v, x, perm, adjacency)
+pushCpp <- function(v, x, perm, adjacency, one_forms) {
+    .Call('_RayleighSelection_pushCpp', PACKAGE = 'RayleighSelection', v, x, perm, adjacency, one_forms)
 }
 

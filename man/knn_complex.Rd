@@ -4,12 +4,14 @@
 \alias{knn_complex}
 \title{Generates a k-nearest neighbor complex from a distance matrix.}
 \usage{
-knn_complex(dist, k)
+knn_complex(dist, k, clique = TRUE)
 }
 \arguments{
 \item{dist}{a distance matrix.}
 
 \item{k}{nunber of nearest neighbors}
+
+\item{clique}{if set to FALSE the computation of 2-simplices is skipped.}
 }
 \value{
 An object of the class \code{simplicial}. The class \code{simplicial} inherits from

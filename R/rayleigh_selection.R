@@ -30,7 +30,7 @@
 #' # Example 1
 #' library(RayleighSelection)
 #' gy <- nerve_complex(list(c(1,4,6,10), c(1,2,7), c(2,3,8), c(3,4,9,10), c(4,5)))
-#' rayleigh_selection(gy,as.data.frame(c(0,1,1,0,0,0,0,0,0,1)))
+#' rayleigh_selection(gy,t(as.data.frame(c(0,1,1,0,0,0,0,0,0,1))))
 #'
 #'
 #' # Example 2: MNIST dataset
@@ -239,10 +239,6 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
 
   if (num_cores > nrow(f)) {
     num_cores <- nrow(f)
-  }
-
-  if (nrow(f) == 1) {
-    f <- t(f)
   }
 
   if (num_cores == 1 || nrow(f) == 1) {

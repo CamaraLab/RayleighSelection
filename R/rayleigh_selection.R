@@ -30,7 +30,7 @@
 #' # Example 1
 #' library(RayleighSelection)
 #' gy <- nerve_complex(list(c(1,4,6,10), c(1,2,7), c(2,3,8), c(3,4,9,10), c(4,5)))
-#' rayleigh_selection(gy,t(as.data.frame(c(0,1,1,0,0,0,0,0,0,1))))
+#' rayleigh_selection(gy,as.data.frame(c(0,1,1,0,0,0,0,0,0,1)))
 #'
 #'
 #' # Example 2: MNIST dataset
@@ -106,7 +106,9 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
 
   ## since complex$two_simplices is a list of sparse matrices, we first get the i'th indices of all the
   ## 2-simplices <i, j, k> by checking which matrices in the list are non-zero
-  idxs <- which(lapply(g2$two_simplices, any) == TRUE, arr.ind=T)
+  if (weights || one_forms) {
+    idxs <- which(lapply(g2$two_simplices, any) == TRUE, arr.ind=T)
+  }
 
   # compute weights for 1-simplices
   if (weights) {
@@ -234,6 +236,15 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
     }
     return(data.frame(qh, row.names = row.names(fu)))
   }
+
+  if (num_cores > nrow(f)) {
+    num_cores <- nrow(f)
+  }
+
+  if (nrow(f) == 1) {
+    f <- t(f)
+  }
+
   if (num_cores == 1 || nrow(f) == 1) {
     qqh <- worker(f)
   } else {

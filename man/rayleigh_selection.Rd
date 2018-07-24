@@ -47,7 +47,7 @@ are obtained by averaging the function across the two vertices connected by each
 # Example 1
 library(RayleighSelection)
 gy <- nerve_complex(list(c(1,4,6,10), c(1,2,7), c(2,3,8), c(3,4,9,10), c(4,5)))
-rayleigh_selection(gy,t(as.data.frame(c(0,1,1,0,0,0,0,0,0,1))))
+rayleigh_selection(gy,as.data.frame(c(0,1,1,0,0,0,0,0,0,1)))
 
 
 # Example 2: MNIST dataset

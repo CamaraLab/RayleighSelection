@@ -7,7 +7,7 @@ Depends: R (>= 3.4.1)
 License: MIT
 Encoding: UTF-8
 LazyData: true
-Imports: Rcpp, igraph, Matrix, data.table, ForceAtlas2
+Imports: Rcpp, igraph, Matrix, data.table, ForceAtlas2, dbscan
 Remotes: analyxcompany/ForceAtlas2
 LinkingTo: Rcpp, RcppArmadillo
 NeedsCompilation: yes

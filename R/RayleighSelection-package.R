@@ -7,6 +7,7 @@
 #' @import parallel
 #' @import ggplot2
 #' @import ForceAtlas2
+#' @import dbscan
 
 # This is a wrapper of the function pushCpp() only used for internal purposes.
 push <- function(lo, g2, pushforward) {

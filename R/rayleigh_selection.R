@@ -71,6 +71,7 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
   col <- lout$l0
   zero_weights <- lout$zero_weights
   one_weights <- lout$one_weights
+  diji <- lout$adjacency_ordered
   if (one_forms) {
     l1_up <- lout$l1up
     l1_down <- lout$l1down

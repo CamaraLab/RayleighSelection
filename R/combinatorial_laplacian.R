@@ -137,7 +137,7 @@ combinatorial_laplacian <- function(g2, one_forms = TRUE, weights = FALSE) {
     l1_down <- l1down(as.matrix(one_simplices), zero_weights, one_weights)
   }
 
-  out <- list(l0 = col, zero_weights = zero_weights, one_weights = one_weights)
+  out <- list(l0 = col, zero_weights = zero_weights, one_weights = one_weights, adjacency_ordered = diji)
   if (one_forms) {
     out[['l1up']] <- l1_up
     out[['l1down']] <- l1_down

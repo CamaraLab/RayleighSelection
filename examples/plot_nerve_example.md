@@ -24,8 +24,8 @@ plot_skeleton(gy)
 
 ![](plot_nerve_example_files/figure-markdown_github/unnamed-chunk-3-1.png)
 
-Compute 0-form and 1-form Comb. Lap. scores, p-value, and q-value
------------------------------------------------------------------
+Compute 0-dimensional and 1-dimensional combinatorial Laplacian scores, p-value, and q-value
+--------------------------------------------------------------------------------------------
 
 #### For the given binary feature on points
 

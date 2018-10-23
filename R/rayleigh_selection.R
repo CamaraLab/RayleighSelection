@@ -82,7 +82,7 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
     kmn<-pushCpp(as.numeric(fo), g2$points_in_vertex, num_perms, g2$adjacency, one_forms)
     kk <- kmn$vertices
     kk <- kk-matrix(rep(kk%*%zero_weights/sum(zero_weights),dim(kk)[2]),dim(kk))
-    qlom <- rowSums(zero_weights*kk^2)
+    qlom <- rowSums(t(zero_weights*t(kk^2)))
     if (sum(abs(qlom))==0.0) {
       qt <- rep(Inf,length(qlom))
     } else {
@@ -95,7 +95,7 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
     if (one_forms) {
       kkv <- kmn$edges[,order(diji)]
       kkv <- kkv-matrix(rep(kkv%*%one_weights/sum(one_weights),dim(kkv)[2]),dim(kkv))
-      qlomv <- rowSums(one_weights*kkv^2)
+      qlomv <- rowSums(t(one_weights*t(kkv^2)))
       if (sum(abs(qlomv))==0.0) {
         qtv <- rep(Inf,length(qlomv))
       } else {

@@ -1,7 +1,7 @@
 MNIST Example
 ================
 
-#### Calculate the Combinatorial Laplacian score of pixels on a nerve complex created by TDA mapper run on the MNIST dataset
+#### Calculate the combinatorial Laplacian score of pixels on a nerve complex created by TDA mapper run on the MNIST dataset
 
 ``` r
 library(RayleighSelection)
@@ -78,8 +78,8 @@ Compute the nerve complex
 gg <- nerve_complex(m2$points_in_vertex)
 ```
 
-Compute 0-form and 1-form Comb. Lap. scores, p-value, and q-value
------------------------------------------------------------------
+Compute 0-form and 1-form combinatorial Laplacian scores, p-value, and q-value
+------------------------------------------------------------------------------
 
 #### For the 301st through 305th pixels
 

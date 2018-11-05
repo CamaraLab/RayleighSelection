@@ -1,7 +1,7 @@
 MNIST Example
 ================
 
-#### Calculate the combinatorial Laplacian score of pixels on a nerve complex created by TDA mapper run on the MNIST dataset
+#### Calculate the Combinatorial Laplacian score of pixels on a nerve complex created by TDA mapper run on the MNIST dataset
 
 ``` r
 library(RayleighSelection)
@@ -48,13 +48,13 @@ mnist_top <- mnist[apply(mnist, 1, var) > 10000,]
 emb <- leim@fun(as(t(mnist_top), "dimRedData"), leim@stdpars)
 ```
 
-    ## 2018-10-23 16:16:58: Creating weight matrix
+    ## 2018-11-05 22:18:10: Creating weight matrix
 
-    ## 2018-10-23 16:17:23: Eigenvalue decomposition
+    ## 2018-11-05 22:18:34: Eigenvalue decomposition
 
-    ## Eigenvalues: 6.178736e-02 4.905515e-02 1.200188e-15
+    ## Eigenvalues: 6.178736e-02 4.905515e-02 1.200168e-15
 
-    ## 2018-10-23 16:18:04: DONE
+    ## 2018-11-05 22:19:15: DONE
 
 Compute Mapper representation
 -----------------------------
@@ -78,8 +78,8 @@ Compute the nerve complex
 gg <- nerve_complex(m2$points_in_vertex)
 ```
 
-Compute 0-form and 1-form combinatorial Laplacian scores, p-value, and q-value
-------------------------------------------------------------------------------
+Compute 0-form and 1-form Comb. Lap. scores, p-value, and q-value
+-----------------------------------------------------------------
 
 #### For the 301st through 305th pixels
 
@@ -87,9 +87,9 @@ Compute 0-form and 1-form combinatorial Laplacian scores, p-value, and q-value
 rayleigh_selection(gg, mnist[301:305,])
 ```
 
-    ##             R0    p0      q0       R1    p1     q1
-    ## X301 0.1774026 0.000 0.00000 1.526852 0.279 0.6975
-    ## X302 0.1855035 0.000 0.00000 1.498672 0.183 0.6975
-    ## X303 0.2114068 0.000 0.00000 1.560080 0.513 0.8550
-    ## X304 0.2536190 0.003 0.00375 1.631599 0.720 0.9000
-    ## X305 0.2999599 0.078 0.07800 1.903140 0.955 0.9550
+    ##             R0    p0    q0       R1    p1      q1
+    ## X301 0.2230237 0.000 0.000 1.526852 0.278 0.69500
+    ## X302 0.2348739 0.000 0.000 1.498672 0.187 0.69500
+    ## X303 0.2596099 0.000 0.000 1.560080 0.531 0.88500
+    ## X304 0.3348691 0.000 0.000 1.631599 0.739 0.92375
+    ## X305 0.4394595 0.001 0.001 1.903140 0.950 0.95000

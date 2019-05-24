@@ -5,7 +5,8 @@
 #' comparing to a null distribution created by reshuffling the features across the points. Pairs
 #' of features are permuted in the same way.
 #'
-#' @param g2 an object of the class \code{simplicial} containing the nerve or clique complex.
+#' @param adj_matrix a binary adjacency matrix for the points over which the
+#'  features of f are defined
 #' @param f a numeric vector or matrix specifying one or more functions with support on
 #' the set of points whose significance will be assesed in the simplicial complex. Each
 #' column corresponds to a point and each row specifies a different function.
@@ -21,17 +22,17 @@
 #'
 #' @export
 #'
-adjacency_score <- function(g2, f, f_pairs, num_perms = 1000, num_cores = 1) {
+adjacency_score <- function(adj_matrix, f, f_pairs, num_perms = 1000, num_cores = 1) {
 
   # Check class of f
   if (class(f) != 'matrix') {
     f <- as.matrix(f)
   }
 
-  if(!isSymmetric(g2$adjacency)) {
-    adj_sym <- 1*((g2$adjacency+t(g2$adjacency)) > 0)
+  if(!isSymmetric(adj_matrix)) {
+    adj_sym <- 1*((adj_matrix+t(adj_matrix)) > 0)
   } else {
-    adj_sym <- g2$adjacency
+    adj_sym <- adj_matrix
   }
 
   zero_weights <- rowSums(adj_sym)

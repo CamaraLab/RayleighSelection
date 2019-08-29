@@ -14,7 +14,7 @@ List pushCpp(arma::vec v, List x, SEXP perm, arma::sp_mat adjacency, SEXP one_fo
   arma::vec xv(v);
   arma::vec co = xv;
   int n = xlist.size();
-  int nn = arma::nonzeros(adjacency).size();
+  int nn = adjacency.n_nonzero;
   int perms = as<int >(perm);
   bool one_form = as<bool >(one_forms);
   arma::mat res_vertices = arma::zeros(perms+1, n);

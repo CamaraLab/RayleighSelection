@@ -8,6 +8,14 @@ library(devtools)
 install_github("CamaraLab/RayleighSelection")
 ```
 
+*Note for Windows users*: There is currently an error with installing this package on Windows (see [Issue #15](https://github.com/CamaraLab/RayleighSelection/issues/15))
+
+Please use our Docker image [camaralab/rayleigh-selection](https://hub.docker.com/r/camaralab/rayleigh-selection) to run an RStudio server (v3.4 or v3.6) with RayleighSelection already installed:
+
+```docker run -d --rm -p 8787:8787 -v "<dir_path>:/home/rstudio/<dir_name>" -e USER=rstudio -e PASSWORD=<password> camaralab/rayleigh-selection```
+
+After running the above command, RStudio should be available at localhost:8787 in your browser with the local directory at \<dir_path\> mounted in Home.
+
 ## Tutorials
 [Nerve complex on toy data](https://github.com/CamaraLab/RayleighSelection/blob/master/examples/plot_nerve_example.md)
 

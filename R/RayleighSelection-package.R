@@ -8,6 +8,11 @@
 #' @import ggplot2
 #' @import ForceAtlas2
 #' @import dbscan
+#' @import dimRed
+#' @import loe
+#' @import RSpectra
+#' @import RANN
+#' @import TDAmapper
 
 # This is a wrapper of the function pushCpp() only used for internal purposes.
 push <- function(lo, g2, pushforward) {

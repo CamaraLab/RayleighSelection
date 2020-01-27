@@ -20,7 +20,7 @@ Returns a list with the Combinatorial Laplacians for 0- and 1-forms
 and the weights for 0- and 1-simplices.
 }
 \description{
-Given a nerve or a clique complex, it computes the Combinatorial Laplacians for 0- and 1-forms and 
+Given a nerve or a clique complex, it computes the Combinatorial Laplacians for 0- and 1-forms and
 the weights of 0- and 1-simplices.
 }
 \examples{

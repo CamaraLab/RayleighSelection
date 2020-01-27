@@ -7,7 +7,6 @@ output: rmarkdown::github_document
 
 ```{r}
 library(RayleighSelection)
-set.seed(12345)
 ```
 
 ## Load data
@@ -18,11 +17,17 @@ pca <- read.table("https://www.dropbox.com/s/onmnzlerl56ckq9/pca_50_ordered.csv?
 ```
 
 ### Subsample data
+#### Take a random sample of cells so L1 laplacian runs faster
 ```{r}
-# Take random sample of cells so L1 laplacian runs faster
-subsample_cells <- sample(nrow(pca), 100, replace=FALSE)
-subsample_cells <- subsample_cells[order(subsample_cells)]
+# A subsample of 100 cells is loaded below - reduce the number of cells to run faster
+# subsample_cells <- sample(nrow(pca), 100, replace=FALSE)
+# subsample_cells <- subsample_cells[order(subsample_cells)]
 
+# Use these cells if you want to directly reproduce the R0 and R1 scores below
+subsample_cells <- scan(file="https://www.dropbox.com/s/84z0poyz2vhqis8/tutorial_subsample.txt?dl=1", what=numeric())
+```
+
+```{r}
 subsample_pca <- pca[subsample_cells,]
 subsample_expression <- expression[,subsample_cells]
 

@@ -67,6 +67,11 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
     f <- as.data.frame(f)
   }
 
+  # If system is Windows, can't use mclapply
+  if (Sys.info()['sysname'] == "Windows" && num_cores > 1) {
+    stop("Windows does not support parallel::mclapply, please set num_cores to 1")
+  }
+
   lout <- combinatorial_laplacian(g2, one_forms, weights)
   col <- lout$l0
   zero_weights <- lout$zero_weights

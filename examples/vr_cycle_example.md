@@ -5,7 +5,6 @@ Vietoris-Rips Complex Example
 
 ``` r
 library(RayleighSelection)
-set.seed(12345)
 ```
 
 Load data
@@ -19,11 +18,18 @@ pca <- read.table("https://www.dropbox.com/s/onmnzlerl56ckq9/pca_50_ordered.csv?
 
 ### Subsample data
 
-``` r
-# Take random sample of cells so L1 laplacian runs faster
-subsample_cells <- sample(nrow(pca), 100, replace=FALSE)
-subsample_cells <- subsample_cells[order(subsample_cells)]
+#### Take a random sample of cells so L1 laplacian runs faster
 
+``` r
+# A subsample of 100 cells is loaded below - reduce the number of cells to run faster
+# subsample_cells <- sample(nrow(pca), 100, replace=FALSE)
+# subsample_cells <- subsample_cells[order(subsample_cells)]
+
+# Use these cells if you want to directly reproduce the R0 and R1 scores below
+subsample_cells <- scan(file="https://www.dropbox.com/s/84z0poyz2vhqis8/tutorial_subsample.txt?dl=1", what=numeric())
+```
+
+``` r
 subsample_pca <- pca[subsample_cells,]
 subsample_expression <- expression[,subsample_cells]
 
@@ -57,7 +63,7 @@ gg <- vr_complex(distance_matrix, 28, clique = FALSE)
 plot_skeleton(gg)
 ```
 
-![](vr_cycle_example_files/figure-markdown_github/unnamed-chunk-6-1.png)
+![](vr_cycle_example_files/figure-markdown_github/unnamed-chunk-7-1.png)
 
 Compute 0-form Comb. Lap. score, p-value, and q-value
 -----------------------------------------------------
@@ -98,7 +104,7 @@ gg <- vr_complex(distance_matrix, 28)
 plot_skeleton(gg)
 ```
 
-![](vr_cycle_example_files/figure-markdown_github/unnamed-chunk-9-1.png)
+![](vr_cycle_example_files/figure-markdown_github/unnamed-chunk-10-1.png)
 
 Compute 0-form and 1-form Comb. Lap. scores, p-value, and q-value
 -----------------------------------------------------------------
@@ -113,8 +119,8 @@ scores <- rayleigh_selection(gg, subsample_expression, num_perms = 1000, num_cor
 ```
 
     ##               R0    p0         q0       R1    p1        q1
-    ## Osbpl2 1.0082917 0.263 0.45977059 1.423183 0.003 0.2730556
-    ## Nrxn3  0.9713071 0.015 0.06328326 1.771032 0.017 0.4927968
-    ## Scn3b  0.8536292 0.000 0.00000000 1.810641 0.003 0.2730556
-    ## Ptk2b  1.0106767 0.340 0.53681336 1.900330 0.042 0.5557161
-    ## Foxj2  1.0020631 0.100 0.24422360 1.933829 0.066 0.5808236
+    ## Osbpl2 1.0082917 0.272 0.47073239 1.423183 0.003 0.2756075
+    ## Nrxn3  0.9713071 0.016 0.06616744 1.771032 0.017 0.5047838
+    ## Scn3b  0.8536292 0.000 0.00000000 1.810641 0.002 0.2234091
+    ## Ptk2b  1.0106767 0.356 0.55118601 1.900330 0.076 0.5800077
+    ## Foxj2  1.0020631 0.093 0.23315226 1.933829 0.073 0.5800077

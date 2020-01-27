@@ -1,6 +1,6 @@
 # RayleighSelection
 
-```RayleighSelection``` is an R package for feature selection in topological spaces. Features are defined as differential forms on a simplicial complex and their significance is assesed through Rayleigh quotients
+```RayleighSelection``` is an R package for feature selection in topological spaces. Features are defined as differential forms on a simplicial complex and their significance is assessed through Rayleigh quotients.
 
 ## Installation
 ```
@@ -8,7 +8,7 @@ library(devtools)
 install_github("CamaraLab/RayleighSelection")
 ```
 
-*Note for Windows users*: There is currently an error with installing this package on Windows (see [Issue #15](https://github.com/CamaraLab/RayleighSelection/issues/15))
+*Note for Windows users*: This package uses the mclapply function for parallelization, which is not supported for Windows. You can either run with ```num_cores = 1``` or use our Docker image.
 
 Please use our Docker image [camaralab/rayleigh-selection](https://hub.docker.com/r/camaralab/rayleigh-selection) to run an RStudio server (v3.4 or v3.6) with RayleighSelection already installed:
 

@@ -11,7 +11,7 @@
 #'
 #' @param g2 an object of the class \code{simplicial} containing the nerve or clique complex.
 #' @param f a numeric vector or matrix specifying one or more functions with support on
-#' the set of points whose significance will be assesed in the simplicial complex. Each
+#' the set of points whose significance will be assessed in the simplicial complex. Each
 #' column corresponds to a point and each row specifies a different function.
 #' @param num_perms number of permutations used to build the null distribution for each
 #' feature. By default is set to 1000.
@@ -63,8 +63,12 @@
 rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1, one_forms = TRUE,
                                weights = FALSE) {
   # Check class of f
-  if (class(f) != 'data.frame') {
-    f <- as.data.frame(f)
+  if (!is(f,'matrix') && !is(f,'Matrix')) {
+    if (is(f,'numeric')) {
+      f <- t(as.matrix(f))
+    } else {
+      f <- as.matrix(f)
+    }
   }
 
   # If system is Windows, can't use mclapply
@@ -122,7 +126,7 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
       qh$R1 <- NULL
       qh$p1 <- NULL
     }
-    for (m in row.names(fu)) {
+    for (m in 1:nrow(fu)) {
       d <- cornel(fu[m,])
       qh$R0 <- rbind(qh$R0, d$R0)
       qh$p0 <- rbind(qh$p0, d$p0)

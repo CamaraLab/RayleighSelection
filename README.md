@@ -2,7 +2,7 @@
 
 ```RayleighSelection``` is an R package for feature selection in topological spaces. Features are defined as differential forms on a simplicial complex and their significance is assessed through Rayleigh quotients. Further details can be found in:
 
-- K. W. Govek*, V. S. Yamajala*, and P. G. Cámara. _Clustering-independent analysis of genomic data using spectral simplicial Theory._ *PLOS Computational Biology* 15 (2019) 11. [DOI: 10.1371/journal.pcbi.1007509](https://doi.org/10.1371/journal.pcbi.1007509). \[*authors contributed equally\].
+- K. W. Govek*, V. S. Yamajala*, and P. G. Cámara. _Clustering-independent analysis of genomic data using spectral simplicial Theory._ PLOS Computational Biology **15** (2019) 11. [DOI: 10.1371/journal.pcbi.1007509](https://doi.org/10.1371/journal.pcbi.1007509). \[*authors contributed equally\].
 
 and its [Supplementary Note 1. Spectral simplicial theory for feature selection](https://doi.org/10.1371/journal.pcbi.1007509.s001).
 

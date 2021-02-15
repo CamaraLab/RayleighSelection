@@ -12,3 +12,6 @@ Remotes: analyxcompany/ForceAtlas2, paultpearson/TDAmapper
 LinkingTo: Rcpp, RcppArmadillo
 NeedsCompilation: yes
 RoxygenNote: 6.1.1
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3

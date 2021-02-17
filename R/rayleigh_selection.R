@@ -19,8 +19,8 @@
 #' By default is set to 10.
 #' @param num_cores integer specifying the number of cores to be used in the computation. By
 #' default only one core is used.
-#' @param one_forms when set FALSE only the Combinatorial Laplacian Score for 0-forms is
-#' computed. By default is set to TRUE.
+#' @param one_forms when set TRUE the Combinatorial Laplacian Score for 1-forms is
+#' also computed. By default is set to FALSE.
 #' @param weights when set to TRUE it takes 2-simplices into account when computing weights.
 #' By default is set to FALSE.
 #'
@@ -30,7 +30,7 @@
 #' # Example 1
 #' library(RayleighSelection)
 #' gy <- nerve_complex(list(c(1,4,6,10), c(1,2,7), c(2,3,8), c(3,4,9,10), c(4,5)))
-#' rayleigh_selection(gy,t(as.data.frame(c(0,1,1,0,0,0,0,0,0,1))))
+#' rayleigh_selection(gy,t(as.data.frame(c(0,1,1,0,0,0,0,0,0,1))), one_forms = TRUE)
 #'
 #'
 #' # Example 2: MNIST dataset
@@ -56,11 +56,11 @@
 #' gg <- nerve_complex(m2$points_in_vertex)
 #'
 #' # Compute R score, p-value, and q-value for the pixels 301st to 305th
-#' rayleigh_selection(gg, mnist[301:305,])
+#' rayleigh_selection(gg, mnist[301:305,], one_forms = TRUE)
 #'
 #' @export
 #'
-rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1, one_forms = TRUE,
+rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1, one_forms = FALSE,
                                weights = FALSE) {
   # Check class of f
   if (!is(f,'matrix') && !is(f,'Matrix')) {

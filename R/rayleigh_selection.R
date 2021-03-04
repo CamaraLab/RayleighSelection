@@ -71,112 +71,21 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
     }
   }
 
-  # If system is Windows, can't use mclapply
-  if (Sys.info()['sysname'] == "Windows" && num_cores > 1) {
-    stop("Windows does not support parallel::mclapply, please set num_cores to 1")
-  }
-
   lout <- combinatorial_laplacian(g2, one_forms, weights)
-  col <- lout$l0
-  zero_weights <- lout$zero_weights
-  one_weights <- lout$one_weights
-  diji <- lout$adjacency_ordered
-  if (one_forms) {
-    l1_up <- lout$l1up
-    l1_down <- lout$l1down
-  }
 
-  # Evaluates R and p for a feature fo
-  cornel <- function(fo) {
-    kmn<-pushCpp(as.numeric(fo), g2$points_in_vertex, num_perms, g2$adjacency, one_forms)
-    kk <- kmn$vertices
-    kk <- kk-matrix(rep(kk%*%zero_weights/sum(zero_weights),dim(kk)[2]),dim(kk))
-    qlom <- rowSums(t(zero_weights*t(kk^2)))
-    if (sum(abs(qlom))==0.0) {
-      qt <- rep(Inf,length(qlom))
-    } else {
-      qt <- rowSums((kk%*%col)*kk)/qlom
-      qt[is.nan(qt)] <- Inf
-    }
-    ph <- NULL
-    ph$R0 <- qt[1]
-    ph$p0 <- (sum(qt<=qt[1])-1.0)/num_perms
-    if (one_forms) {
-      kkv <- kmn$edges[,order(diji)]
-      kkv <- kkv-matrix(rep(kkv%*%one_weights/sum(one_weights),dim(kkv)[2]),dim(kkv))
-      qlomv <- rowSums(t(one_weights*t(kkv^2)))
-      if (sum(abs(qlomv))==0.0) {
-        qtv <- rep(Inf,length(qlomv))
-      } else {
-        qtv <- rowSums((kkv%*%(l1_up+l1_down))*kkv)/qlomv
-        qtv[is.nan(qtv)] <- Inf
-      }
-      ph$R1 <- qtv[1]
-      ph$p1 <- (sum(qtv<=qtv[1])-1.0)/num_perms
-    }
-    return(ph)
-  }
-
-  # Each worker evaluates R anp p for a set fu of features
-  worker <- function(fu) {
-    qh <- NULL
-    qh$R0 <- NULL
-    qh$p0 <- NULL
-    if (one_forms) {
-      qh$R1 <- NULL
-      qh$p1 <- NULL
-    }
-    for (m in 1:nrow(fu)) {
-      d <- cornel(fu[m,])
-      qh$R0 <- rbind(qh$R0, d$R0)
-      qh$p0 <- rbind(qh$p0, d$p0)
-      if (one_forms) {
-        qh$R1 <- rbind(qh$R1, d$R1)
-        qh$p1 <- rbind(qh$p1, d$p1)
-      }
-    }
-    return(data.frame(qh, row.names = row.names(fu)))
-  }
-
-  if (num_cores > nrow(f)) {
-    num_cores <- nrow(f)
-  }
-
-  if (num_cores == 1 || nrow(f) == 1) {
-    qqh <- worker(f)
-  } else {
-    # If more than one core then split the features in num_cores parts accordingly
-    wv <- floor(nrow(f)/num_cores)
-    wr <- nrow(f) - wv*num_cores
-    work <- list()
-    if (wr>0) {
-      for (m in 1:wr) {
-        work[[m]] <- (f[(1+(m-1)*(wv+1)):(m*(wv+1)),])
-      }
-      for (m in (wr+1):num_cores) {
-        work[[m]] <- (f[(1+wr+(m-1)*wv):(wr+m*wv),])
-      }
-    } else {
-      for (m in 1:num_cores) {
-        work[[m]] <- (f[(1+(m-1)*wv):(m*wv),])
-      }
-    }
-    reul <- mclapply(work, worker, mc.cores = num_cores)
-    qqh <- reul[[1]]
-    for (m in 2:num_cores) {
-      qqh <- rbind(qqh, reul[[m]])
-    }
-  }
+  out <- rayleight_selectionCpp(lout, g2$points_in_vertex, g2$adjacency,
+                                         f, num_perms, num_cores, one_forms)
+  out <- data.frame(out, row.names = row.names(f))
 
   # Adjust for multiple hypothesis testing
-  qqh$q0 <- p.adjust(qqh$p0, method = 'BH')
+  out$q0 <- p.adjust(out$p0, method = 'BH')
   if (one_forms) {
-    qqh$q1 <- p.adjust(qqh$p1, method = 'BH')
+    out$q1 <- p.adjust(out$p1, method = 'BH')
   }
 
   if (one_forms) {
-    return(qqh[,c(1,2,5,3,4,6)])
+    return(out[,c(1,2,5,3,4,6)])
   } else {
-    return(qqh)
+    return(out)
   }
 }

@@ -31,18 +31,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// pushCpp
-List pushCpp(arma::vec v, List x, SEXP perm, arma::sp_mat adjacency, SEXP one_forms);
-RcppExport SEXP _RayleighSelection_pushCpp(SEXP vSEXP, SEXP xSEXP, SEXP permSEXP, SEXP adjacencySEXP, SEXP one_formsSEXP) {
+// rayleight_selectionCpp
+List rayleight_selectionCpp(const List& comb_lablacian, const List& points_in_vertex, const arma::sp_mat& adjacency, const arma::mat& func, int n_perm, const int num_cores, const bool one_forms);
+RcppExport SEXP _RayleighSelection_rayleight_selectionCpp(SEXP comb_lablacianSEXP, SEXP points_in_vertexSEXP, SEXP adjacencySEXP, SEXP funcSEXP, SEXP n_permSEXP, SEXP num_coresSEXP, SEXP one_formsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::vec >::type v(vSEXP);
-    Rcpp::traits::input_parameter< List >::type x(xSEXP);
-    Rcpp::traits::input_parameter< SEXP >::type perm(permSEXP);
-    Rcpp::traits::input_parameter< arma::sp_mat >::type adjacency(adjacencySEXP);
-    Rcpp::traits::input_parameter< SEXP >::type one_forms(one_formsSEXP);
-    rcpp_result_gen = Rcpp::wrap(pushCpp(v, x, perm, adjacency, one_forms));
+    Rcpp::traits::input_parameter< const List& >::type comb_lablacian(comb_lablacianSEXP);
+    Rcpp::traits::input_parameter< const List& >::type points_in_vertex(points_in_vertexSEXP);
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type adjacency(adjacencySEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type func(funcSEXP);
+    Rcpp::traits::input_parameter< int >::type n_perm(n_permSEXP);
+    Rcpp::traits::input_parameter< const int >::type num_cores(num_coresSEXP);
+    Rcpp::traits::input_parameter< const bool >::type one_forms(one_formsSEXP);
+    rcpp_result_gen = Rcpp::wrap(rayleight_selectionCpp(comb_lablacian, points_in_vertex, adjacency, func, n_perm, num_cores, one_forms));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -50,7 +52,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_RayleighSelection_adjacencyCpp", (DL_FUNC) &_RayleighSelection_adjacencyCpp, 2},
     {"_RayleighSelection_l1down", (DL_FUNC) &_RayleighSelection_l1down, 3},
-    {"_RayleighSelection_pushCpp", (DL_FUNC) &_RayleighSelection_pushCpp, 5},
+    {"_RayleighSelection_rayleight_selectionCpp", (DL_FUNC) &_RayleighSelection_rayleight_selectionCpp, 7},
     {NULL, NULL, 0}
 };
 

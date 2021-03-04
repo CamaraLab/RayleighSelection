@@ -9,7 +9,7 @@ l1down <- function(one_simplices, zero_weights, one_weights) {
     .Call('_RayleighSelection_l1down', PACKAGE = 'RayleighSelection', one_simplices, zero_weights, one_weights)
 }
 
-pushCpp <- function(v, x, perm, adjacency, one_forms) {
-    .Call('_RayleighSelection_pushCpp', PACKAGE = 'RayleighSelection', v, x, perm, adjacency, one_forms)
+rayleight_selectionCpp <- function(comb_lablacian, points_in_vertex, adjacency, func, n_perm, num_cores, one_forms = TRUE) {
+    .Call('_RayleighSelection_rayleight_selectionCpp', PACKAGE = 'RayleighSelection', comb_lablacian, points_in_vertex, adjacency, func, n_perm, num_cores, one_forms)
 }
 

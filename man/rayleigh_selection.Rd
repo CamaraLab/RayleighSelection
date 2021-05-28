@@ -4,14 +4,21 @@
 \alias{rayleigh_selection}
 \title{Ranks features using the Combinatorial Laplacian Score for 0- and 1-forms.}
 \usage{
-rayleigh_selection(g2, f, num_perms = 1000, seed = 10, num_cores = 1,
-  one_forms = TRUE, weights = FALSE)
+rayleigh_selection(
+  g2,
+  f,
+  num_perms = 1000,
+  seed = 10,
+  num_cores = 1,
+  one_forms = TRUE,
+  weights = FALSE
+)
 }
 \arguments{
 \item{g2}{an object of the class \code{simplicial} containing the nerve or clique complex.}
 
 \item{f}{a numeric vector or matrix specifying one or more functions with support on
-the set of points whose significance will be assesed in the simplicial complex. Each
+the set of points whose significance will be assessed in the simplicial complex. Each
 column corresponds to a point and each row specifies a different function.}
 
 \item{num_perms}{number of permutations used to build the null distribution for each

@@ -73,19 +73,21 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
 
   lout <- combinatorial_laplacian(g2, one_forms, weights)
 
-  out <- rayleight_selectionCpp(lout, g2$points_in_vertex, g2$adjacency,
-                                         f, num_perms, num_cores, one_forms)
-  out <- data.frame(out, row.names = row.names(f))
+  scorer <- new(LaplacianScorer,lout, g2$points_in_vertex, g2$adjacency, one_forms)
 
-  # Adjust for multiple hypothesis testing
+  out <- data.frame(R0 = scorer$score(f, 0)[,1], row.names = row.names(f))
+  samp <- scorer$sample_scores(f, num_perms, 0, num_cores)
+  out$p0 <- apply(samp <= out$R0, 1, sum) / num_perms
   out$q0 <- p.adjust(out$p0, method = 'BH')
-  if (one_forms) {
-    out$q1 <- p.adjust(out$p1, method = 'BH')
-  }
+  if(! one_forms) return(out)
 
-  if (one_forms) {
-    return(out[,c(1,2,5,3,4,6)])
-  } else {
-    return(out)
-  }
+  out$R1 <- scorer$score(f, 1)[,1]
+  samp <- scorer$sample_scores(f, num_perms, 1, num_cores)
+  out$p1 <- apply(samp <= out$R1, 1, sum) / num_perms
+  out$q1 <- p.adjust(out$p1, method = 'BH')
+  return(out)
+
 }
+
+#needed to load module
+Rcpp::loadModule("mod_laplacian", TRUE)

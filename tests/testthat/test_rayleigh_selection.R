@@ -1,12 +1,11 @@
 #test rayleigh_selection
 
 test_that("R0 and R1 are correct",{
-  gy <- nerve_complex(list(c(1,4,6,10), c(1,2,7), c(2,3,8), c(3,4,9,10), c(4,5)))
+  gy <- nerve_complex(list(c(1,2,6), c(2,3,4), c(4,5,6))) #this simplicial complex is a hollow triangle
 
-  result <- rayleigh_selection(gy,t(as.data.frame(c(0,1,1,0,0,0,0,0,0,1))), num_perms = 100)
+  result <- rayleigh_selection(gy,t(as.matrix(c(3, 0 , 3, 0, 0, 3))), num_perms = 100)
 
-  expect_true(is.data.frame(result))
-  expect_equal(result[1,"R0"], 0.958466, tolerance = 10**(-6))
-  expect_equal(result[1,"R1"], 0.553640, tolerance = 10**(-6))
-
+  #these can be verified by hand
+  expect_equal(result[1,"R0"], 1.5, tolerance = 1e-9)
+  expect_equal(result[1,"R1"], 1/6, tolerance = 1e-9)
 })

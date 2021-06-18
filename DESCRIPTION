@@ -7,8 +7,25 @@ Depends: R (>= 3.4.1)
 License: MIT
 Encoding: UTF-8
 LazyData: true
-Imports: Rcpp, igraph, Matrix, data.table, ForceAtlas2, dbscan, ggplot2, dimRed, loe, RSpectra, RANN, TDAmapper
+Imports: 
+    Rcpp,
+    igraph,
+    Matrix,
+    data.table,
+    ForceAtlas2,
+    dbscan,
+    ggplot2,
+    dimRed,
+    loe,
+    RSpectra,
+    RANN,
+    TDAmapper,
+    MASS,
+    eva
 Remotes: analyxcompany/ForceAtlas2, paultpearson/TDAmapper
 LinkingTo: Rcpp, RcppArmadillo
 NeedsCompilation: yes
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.1
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3

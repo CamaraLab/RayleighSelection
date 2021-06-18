@@ -4,8 +4,17 @@
 \alias{plot_skeleton}
 \title{Plots a simplicial complex.}
 \usage{
-plot_skeleton(g2, k, r, g, b, pushforward = mean, seed = 10,
-  iterations = 1500, file = "")
+plot_skeleton(
+  g2,
+  k,
+  r,
+  g,
+  b,
+  pushforward = mean,
+  seed = 10,
+  iterations = 1500,
+  file = ""
+)
 }
 \arguments{
 \item{g2}{an object of the class \code{simplicial} containing the nerve complex.}

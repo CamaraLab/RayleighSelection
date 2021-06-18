@@ -4,14 +4,26 @@
 \alias{rayleigh_selection}
 \title{Ranks features using the Combinatorial Laplacian Score for 0- and 1-forms.}
 \usage{
-rayleigh_selection(g2, f, num_perms = 1000, seed = 10, num_cores = 1,
-  one_forms = TRUE, weights = FALSE)
+rayleigh_selection(
+  g2,
+  f,
+  num_perms = 1000,
+  seed = 10,
+  num_cores = 1,
+  one_forms = TRUE,
+  weights = FALSE,
+  optimize.p = NULL,
+  max_perms = 10000,
+  pow = 1,
+  nextremes = c(seq(50, 250, 25), seq(300, 500, 50), seq(600, 1000, 100)),
+  alpha = 0.15
+)
 }
 \arguments{
 \item{g2}{an object of the class \code{simplicial} containing the nerve or clique complex.}
 
 \item{f}{a numeric vector or matrix specifying one or more functions with support on
-the set of points whose significance will be assesed in the simplicial complex. Each
+the set of points whose significance will be assessed in the simplicial complex. Each
 column corresponds to a point and each row specifies a different function.}
 
 \item{num_perms}{number of permutations used to build the null distribution for each
@@ -28,10 +40,28 @@ computed. By default is set to TRUE.}
 
 \item{weights}{when set to TRUE it takes 2-simplices into account when computing weights.
 By default is set to FALSE.}
+
+\item{optimize.p}{string indicating the type of optimization used for computing p-values.
+Must have value \code{NULL} for no optimization, \code{"perm"} for optimizing the calculation of
+p-values using only permutations, or \code{"gpd"} for using a permutations and GPD in optimizing p-value calculation.}
+
+\item{pow}{positive number indicating the power to which the samples of the null distribution and the associated
+score are to be transformed before computing a GPD approximation (only used when
+\code{optimize.p} is set to \code{"gdp"}).}
+
+\item{nextremes}{vector of integers with the candidate number of extremes for fitting a GDP
+(only used when \code{optimize.p} is set to \code{"gdp"}).}
+
+\item{alpha}{level of FDR control for fitting a GPD (only used when \code{optimize.p} is set to \code{"gdp"}).}
+
+\item{max_perm}{maximum number of permutations to be used when computing p-values, only
+relevant when \code{optimize.p} is set to \code{"perm"} or \code{"gpd"}.}
 }
 \value{
 Returns a data frame with the value of the Combinatorial Laplacian Score for 0- and 1-forms,
-the p-values, and the q-values computed using Benjamini-Hochberg procedure.
+the p-values, and the q-values computed using Benjamini-Hochberg procedure. If \code{optimize.p} is set
+to \code{"perm"} or \code{"gpd"} then then number of samples at which convergence of p-values was obtained is
+also returned.
 }
 \description{
 Given a nerve or a clique complex and a set of features consisting of functions with support on
@@ -42,6 +72,23 @@ the function across the point cloud. For nerve complexes, feature functions indu
 1-forms in the complex by averaging the function across the points associated to 0- and 1-simplices
 respectively. For clique complexes, feature functions are directly 0-forms in the complex and 1-forms
 are obtained by averaging the function across the two vertices connected by each edge.
+}
+\details{
+The calculation of p-values can be optimized by iteratively doubling the number of samples of the
+null distribution until convergence is reached. Two version of this iteraction scheme are implemented.
+In the fist one, a p-value is considered convergent if there are at least 10 samples of the null
+distribution that do not exceed the associated Combinatorial Laplacian Score. In the second one, a p-value is considered
+convergent of the condition above holds, and, in case there are less than 10 small samples a generalized
+Pareto distribution (GPD) is used to approximate a p-value. A p-value obtained by a GPD is considered
+convergent if the relative variation is small in the last 3 iteractions and the quartiles
+of the approximation are relatively close.
+
+When computing a p-value using a GPD, only null distribution samples in the first quartile are considered.
+The Combinatorial Laplacian Score and associated null distribution samples are transformed by the function
+\deqn{f(x) = (1 - (x - loc)/scale)^pow}
+where \eqn{loc} is the first quartile of the null distribution and \eqn{scale} is the first quartile minus
+the 5%-quantile. A number of extremes for fitting a GPD is chosen using the ForwardStop p-value adjustment, and
+quartiles for the p-value estimates are obtained by sampling GDP parameters form a multivariate normal distribution.
 }
 \examples{
 # Example 1

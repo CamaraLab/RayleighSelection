@@ -31,26 +31,13 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// pushCpp
-List pushCpp(arma::vec v, List x, SEXP perm, arma::sp_mat adjacency, SEXP one_forms);
-RcppExport SEXP _RayleighSelection_pushCpp(SEXP vSEXP, SEXP xSEXP, SEXP permSEXP, SEXP adjacencySEXP, SEXP one_formsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::vec >::type v(vSEXP);
-    Rcpp::traits::input_parameter< List >::type x(xSEXP);
-    Rcpp::traits::input_parameter< SEXP >::type perm(permSEXP);
-    Rcpp::traits::input_parameter< arma::sp_mat >::type adjacency(adjacencySEXP);
-    Rcpp::traits::input_parameter< SEXP >::type one_forms(one_formsSEXP);
-    rcpp_result_gen = Rcpp::wrap(pushCpp(v, x, perm, adjacency, one_forms));
-    return rcpp_result_gen;
-END_RCPP
-}
+
+RcppExport SEXP _rcpp_module_boot_mod_laplacian();
 
 static const R_CallMethodDef CallEntries[] = {
     {"_RayleighSelection_adjacencyCpp", (DL_FUNC) &_RayleighSelection_adjacencyCpp, 2},
     {"_RayleighSelection_l1down", (DL_FUNC) &_RayleighSelection_l1down, 3},
-    {"_RayleighSelection_pushCpp", (DL_FUNC) &_RayleighSelection_pushCpp, 5},
+    {"_rcpp_module_boot_mod_laplacian", (DL_FUNC) &_rcpp_module_boot_mod_laplacian, 0},
     {NULL, NULL, 0}
 };
 

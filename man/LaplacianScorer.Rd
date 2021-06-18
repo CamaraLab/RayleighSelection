@@ -53,7 +53,7 @@ scorer <- new(LaplacianScorer, lout, gy$points_in_vertex, gy$adjacency, TRUE)
 # Compute the 0-laplacian score of a a function
 scorer$score(t(as.matrix(c(0,1,1,0,0,0,0,0,0,1))), 0)
 
-# Sample scores by suffling the function
+# Sample scores by shuffling the function
 scorer$sample_scores(t(as.matrix(c(0,1,1,0,0,0,0,0,0,1))), 10, 0, 1)
 
 }

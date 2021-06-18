@@ -232,7 +232,7 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
         idx <- idx[!conv]
         samp <- samp[!conv, , drop = F]
         log.p.gpd <- cbind(log.p.gpd[!conv, , drop = F], gpd.out$log.p[!conv])
-        if(2*n_samps <= max_perms) log.p.gpd <- log.p.gpd[, 2:ncol(log.p.gpd)]
+        if(2*n_samps <= max_perms) log.p.gpd <- log.p.gpd[, 2:ncol(log.p.gpd), drop = F]
       }
       if(n_samps < max_perms){
         # get new samples

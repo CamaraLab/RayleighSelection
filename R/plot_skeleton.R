@@ -78,7 +78,7 @@ plot_skeleton <- function(g2, k, r, g, b, pushforward = mean, seed = 10, iterati
 
   p = layout.forceatlas2(as.undirected(g2), directed=TRUE, iterations=iterations, plotstep=0)
   plot(norm_coords(p),cex=0.1,xaxt='n', yaxt='n', ann=FALSE, bty='n')
-  idxs <- which(lapply(g2$two_simplices, any) == TRUE, arr.ind=T)
+  idxs <- which(lapply(g2$two_simplices, function(x) sum(abs(x))) > 0, arr.ind=T)
   for (m in idxs) {
     qwy <- which(g2$two_simplices[[m]]!=0,arr.ind = T)
     for (k in 1:nrow(qwy)) {

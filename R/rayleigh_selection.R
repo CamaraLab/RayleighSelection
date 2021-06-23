@@ -103,7 +103,7 @@ Rcpp::loadModule("mod_laplacian", TRUE)
 #'
 
 rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1,
-                               mc.preschedule = TRUE, one_forms = TRUE, weights = FALSE,
+                               mc.preschedule = TRUE, one_forms = FALSE, weights = FALSE,
                                optimize.p = NULL, max_perms = 16000, pow = 1,
                                nextremes = c(seq(50, 250, 25), seq(300, 500, 50), seq(600, 1000, 100)),
                                alpha = 0.15){

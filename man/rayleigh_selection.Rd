@@ -10,10 +10,11 @@ rayleigh_selection(
   num_perms = 1000,
   seed = 10,
   num_cores = 1,
+  mc.preschedule = TRUE,
   one_forms = TRUE,
   weights = FALSE,
   optimize.p = NULL,
-  max_perms = 10000,
+  max_perms = 16000,
   pow = 1,
   nextremes = c(seq(50, 250, 25), seq(300, 500, 50), seq(600, 1000, 100)),
   alpha = 0.15
@@ -35,27 +36,34 @@ By default is set to 10.}
 \item{num_cores}{integer specifying the number of cores to be used in the computation. By
 default only one core is used.}
 
-\item{one_forms}{when set FALSE only the Combinatorial Laplacian Score for 0-forms is
-computed. By default is set to TRUE.}
+\item{mc.preschedule}{when set to TRUE parallel compulations are prescheduled, see
+\link[parallel]{mclapply}. Only has effect if \code{num_cores} > 1 and the code is not being run on Windows.
+By default is set to TRUE.}
+
+\item{one_forms}{when set TRUE the Combinatorial Laplacian Score for 1-forms is
+also computed. By default is set to FALSE.}
 
 \item{weights}{when set to TRUE it takes 2-simplices into account when computing weights.
 By default is set to FALSE.}
 
 \item{optimize.p}{string indicating the type of optimization used for computing p-values.
 Must have value \code{NULL} for no optimization, \code{"perm"} for optimizing the calculation of
-p-values using only permutations, or \code{"gpd"} for using a permutations and GPD in optimizing p-value calculation.}
+p-values using only permutations, or \code{"gpd"} for using a permutations and GPD in optimizing p-value calculation.
+By default is set to \code{NULL}.}
 
 \item{pow}{positive number indicating the power to which the samples of the null distribution and the associated
 score are to be transformed before computing a GPD approximation (only used when
 \code{optimize.p} is set to \code{"gdp"}).}
 
-\item{nextremes}{vector of integers with the candidate number of extremes for fitting a GDP
-(only used when \code{optimize.p} is set to \code{"gdp"}).}
+\item{nextremes}{vector of integers with the candidate number of extremes for fitting a GDP.
+Only used when \code{optimize.p} is set to \code{"gdp"}. By default is set to
+\code{c(seq(50, 250, 25), seq(300, 500, 50), seq(600, 1000, 100))}.}
 
-\item{alpha}{level of FDR control for fitting a GPD (only used when \code{optimize.p} is set to \code{"gdp"}).}
+\item{alpha}{level of FDR control for fitting a GPD. Only used when \code{optimize.p} is set to \code{"gdp"}.
+By default is set to 0.15.}
 
 \item{max_perm}{maximum number of permutations to be used when computing p-values, only
-relevant when \code{optimize.p} is set to \code{"perm"} or \code{"gpd"}.}
+relevant when \code{optimize.p} is set to \code{"perm"} or \code{"gpd"}. By default is set to 16000.}
 }
 \value{
 Returns a data frame with the value of the Combinatorial Laplacian Score for 0- and 1-forms,
@@ -94,7 +102,7 @@ quartiles for the p-value estimates are obtained by sampling GDP parameters form
 # Example 1
 library(RayleighSelection)
 gy <- nerve_complex(list(c(1,4,6,10), c(1,2,7), c(2,3,8), c(3,4,9,10), c(4,5)))
-rayleigh_selection(gy,t(as.data.frame(c(0,1,1,0,0,0,0,0,0,1))))
+rayleigh_selection(gy,t(as.data.frame(c(0,1,1,0,0,0,0,0,0,1))), one_forms = TRUE)
 
 
 # Example 2: MNIST dataset
@@ -120,6 +128,6 @@ m2 <- mapper2D(distance_matrix = mnist_distances,
 gg <- nerve_complex(m2$points_in_vertex)
 
 # Compute R score, p-value, and q-value for the pixels 301st to 305th
-rayleigh_selection(gg, mnist[301:305,])
+rayleigh_selection(gg, mnist[301:305,], one_forms = TRUE)
 
 }

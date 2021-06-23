@@ -15,5 +15,5 @@
 #' @import TDAmapper
 
 # dummy function to force imports
-import.dummy <- function() {return(NULL)}
+.import.dummy <- function() {return(NULL)}
 

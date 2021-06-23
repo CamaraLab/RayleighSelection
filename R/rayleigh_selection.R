@@ -1,3 +1,6 @@
+# Needed to load C++ module
+Rcpp::loadModule("mod_laplacian", TRUE)
+
 #' Ranks features using the Combinatorial Laplacian Score for 0- and 1-forms.
 #'
 #' Given a nerve or a clique complex and a set of features consisting of functions with support on
@@ -29,6 +32,9 @@
 #' By default is set to 10.
 #' @param num_cores integer specifying the number of cores to be used in the computation. By
 #' default only one core is used.
+#' @param mc.preschedule when set to TRUE parallel compulations are prescheduled, see
+#' \link[parallel]{mclapply}. Only has effect if \code{num_cores} > 1 and the code is not being run on Windows.
+#' By default is set to TRUE.
 #' @param one_forms when set TRUE the Combinatorial Laplacian Score for 1-forms is
 #' also computed. By default is set to FALSE.
 #' @param weights when set to TRUE it takes 2-simplices into account when computing weights.
@@ -36,14 +42,17 @@
 #' @param optimize.p string indicating the type of optimization used for computing p-values.
 #' Must have value \code{NULL} for no optimization, \code{"perm"} for optimizing the calculation of
 #' p-values using only permutations, or \code{"gpd"} for using a permutations and GPD in optimizing p-value calculation.
+#' By default is set to \code{NULL}.
 #' @param max_perm maximum number of permutations to be used when computing p-values, only
-#' relevant when \code{optimize.p} is set to \code{"perm"} or \code{"gpd"}.
+#' relevant when \code{optimize.p} is set to \code{"perm"} or \code{"gpd"}. By default is set to 16000.
 #' @param pow positive number indicating the power to which the samples of the null distribution and the associated
 #' score are to be transformed before computing a GPD approximation (only used when
 #' \code{optimize.p} is set to \code{"gdp"}).
-#' @param nextremes vector of integers with the candidate number of extremes for fitting a GDP
-#' (only used when \code{optimize.p} is set to \code{"gdp"}).
-#' @param alpha level of FDR control for fitting a GPD (only used when \code{optimize.p} is set to \code{"gdp"}).
+#' @param nextremes vector of integers with the candidate number of extremes for fitting a GDP.
+#' Only used when \code{optimize.p} is set to \code{"gdp"}. By default is set to
+#' \code{c(seq(50, 250, 25), seq(300, 500, 50), seq(600, 1000, 100))}.
+#' @param alpha level of FDR control for fitting a GPD. Only used when \code{optimize.p} is set to \code{"gdp"}.
+#' By default is set to 0.15.
 #'
 #'
 #' @details When computing a p-value using a GPD, only null distribution samples in the first quartile are considered.
@@ -94,9 +103,8 @@
 #'
 
 rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1,
-                               one_forms = FALSE, weights = FALSE,
-                               optimize.p = NULL, max_perms = 10000,
-                               pow = 1,
+                               mc.preschedule = TRUE, one_forms = TRUE, weights = FALSE,
+                               optimize.p = NULL, max_perms = 16000, pow = 1,
                                nextremes = c(seq(50, 250, 25), seq(300, 500, 50), seq(600, 1000, 100)),
                                alpha = 0.15){
   # Check class of f
@@ -134,14 +142,16 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
       samp.quant <- quantile(samples[i,], probs = c(0.05, 0.25), names = FALSE)
       samp.loc <- samp.quant[2]
       samp.scale <- samp.quant[2] - samp.quant[1]
-      samp <- ( 1 - (samples[i, samples[i,] <= samp.loc] - samp.loc)/samp.scale )**pow
+      samp <- ( 1 - (samples[i, samples[i,] <= samp.loc] - samp.loc)/samp.scale )^pow
       score <- ( 1 - (R[i] - samp.loc)/samp.scale)^pow
 
       # Using ForwardStop to select the number of extreme samples
       gpd.test <- tryCatch(
-                    eva::gpdSeqTests(samp, nextremes = num.ext, method = "ad"),
-                    error = function(e) NULL)
+        eva::gpdSeqTests(samp, nextremes = num.ext, method = "ad"),
+        error = function(e) NULL)
+
       if(is.null(gpd.test)) next
+
       if(all(gpd.test$ForwardStop > alpha)){
         n.selected <- num.ext[length(num.ext)]
       }else if(any(gpd.test$ForwardStop > alpha)){
@@ -179,7 +189,7 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
     return(out)
   }
 
-  optim.p <- function(R, dim, use.gpd){
+  optim.p <- function(R, func, dim, use.gpd, n.cores = 1){
     # Optimizes the calculation of p-values by permutation
     #
     # Arguments
@@ -190,7 +200,7 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
     # Return
     #  data frame with p-values and number of samples where convergence was achieved
 
-    n_funcs <- nrow(f)
+    n_funcs <- nrow(func)
     idx <- 1:n_funcs # index of non-convergent functions
     p <- rep(NA, n_funcs)
     n.conv <- rep(NA, n_funcs)
@@ -201,7 +211,7 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
     idx<- idx[!(is.infinite(R) & R > 0)]
 
     n_samps <- num_perms
-    samp <- scorer$sample_scores(f[idx, ,drop = F], n_samps, dim, num_cores)
+    samp <- scorer$sample_scores(func[idx, ,drop = F], n_samps, dim, n.cores)
     # setting up matrix to keep track of gpd p-values
     if(use.gpd) log.p.gpd <- matrix(rep(NA, 3*length(idx)), nrow = length(idx))
     while(TRUE){
@@ -238,7 +248,7 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
       if(n_samps < max_perms){
         # get new samples
         num.new.samps = min(n_samps, max_perms - n_samps)
-        samp <- cbind(samp, scorer$sample_scores(f[idx, , drop = F], num.new.samps, dim, num_cores))
+        samp <- cbind(samp, scorer$sample_scores(func[idx, , drop = F], num.new.samps, dim, n.cores))
         n_samps <- n_samps + num.new.samps
       }else{
         break
@@ -249,37 +259,67 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
   }
 
   lout <- combinatorial_laplacian(g2, one_forms, weights)
-
   scorer <- new(LaplacianScorer,lout, g2$points_in_vertex, g2$adjacency, one_forms)
 
-  R0 <- scorer$score(f, 0)
-  out <- data.frame(R0 = R0, row.names = row.names(f))
 
-  if(is.null(optimize.p)){
-    samp <- scorer$sample_scores(f, num_perms, 0, num_cores)
-    out$p0 <- apply(samp <= out$R0, 1, sum) / num_perms
-  }else{
-  p.vals <- optim.p(R0, 0, optimize.p == "gpd")
-  out$p0 <- p.vals$p
-  out$n0.conv <- p.vals$n.conv
+  dims <- if(one_forms) c(0,1) else 0 # dimension to be considered
+
+  out <- list()
+  is.windows <- Sys.info()['sysname'] == "Windows"
+  use.gpd <- !is.na(optimize.p) && optimize.p == "gpd"
+
+  # Splitting functions for use with mclapply
+  if(!is.windows && nrow(f) > 1 && num_cores > 1) f.list <- split(f, row(f))
+
+  set.seed(seed)
+
+  for(d in dims){
+    # Names of columns
+    Rd <- sprintf("R%d", d)
+    nd <- sprintf("n%d.conv", d)
+    pd <- sprintf("p%d", d)
+    qd<-sprintf("q%d", d)
+
+    R <- as.numeric(scorer$score(f, d)) # computing scores
+    out[[Rd]] <- R
+
+    if(is.null(optimize.p)){
+      # No optimization for p values is done
+      if(!is.windows && nrow(f) > 1 && num_cores > 1){
+        # Using mclapply to parallelize sampling
+        worker <- function(func) scorer$sample_scores(t(as.matrix(func)), num_perms, d, 1)
+
+        samp.list <- parallel::mclapply(f.list, worker,
+                                        mc.cores =  num_cores,
+                                        mc.preschedule = mc.preschedule)
+        samp <- samp.list[[1]]
+        for(k in 2:nrow(f)) samp <- rbind(samp, samp.list[[k]])
+      }else{
+        # Paralellization (if any) is done in C++ code with OMP
+        samp <- scorer$sample_scores(f, num_perms, d, num_cores)
+      }
+      out[[pd]] <- apply(samp <= R, 1, sum) / num_perms # computing p-values
+    }else{
+      # Optimization for p-values is done
+      if(!is.windows && nrow(f) > 1 && num_cores > 1){
+        # Using mcmapply to parallelize p-value approximation
+        work <- function(score, func) optim.p(score, t(as.matrix(func)), 0, use.gpd)
+
+        p.vals <- parallel::mcmapply(work, R, f.list,
+                                     mc.cores = num_cores,
+                                     mc.preschedule = mc.preschedule)
+
+        out[[pd]] <- as.numeric(p.vals["p",])
+        out[[nd]] <- as.numeric(p.vals["n.conv",])
+      }else{
+        # Paralellization (if any) is done in C++ with OMP
+        p.vals <- optim.p(R, f, d, use.gpd, n.cores = num_cores)
+        out[[pd]] <- p.vals$p
+        out[[nd]] <- p.vals$n.conv
+      }
+    }
+    # Adjusting p-values with the Benjamini-Hochberg procedure
+    out[[qd]] <- p.adjust(out[[pd]], method = 'BH')
   }
-  out$q0 <- p.adjust(out$p0, method = 'BH')
-
-  if(!one_forms) return(out)
-
-  out$R1 <- scorer$score(f, 1)[,1]
-  if(is.null(optimize.p)){
-    samp <- scorer$sample_scores(f, num_perms, 1, num_cores)
-    out$p1 <- apply(samp <= out$R1, 1, sum) / num_perms
-  }else{
-  p.vals <- optim.p(out$R1, 1, optimize.p == "gpd")
-  out$p1 <- p.vals$p
-  out$n1.conv <- p.vals$n.conv
-  }
-  out$q1 <- p.adjust(out$p1, method = 'BH')
-  return(out)
-
+  return(as.data.frame(out))
 }
-
-#needed to load module
-Rcpp::loadModule("mod_laplacian", TRUE)

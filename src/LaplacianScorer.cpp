@@ -63,7 +63,7 @@
 using namespace Rcpp;
 
 
-LaplacianScorer::LaplacianScorer(const List& comb_lablacian,
+LaplacianScorer::LaplacianScorer(const List& comb_laplacian,
                                  const List& pts_in_vertex,
                                  const arma::sp_mat& adjacency,
                                  const bool one_forms){
@@ -73,17 +73,17 @@ LaplacianScorer::LaplacianScorer(const List& comb_lablacian,
     points_in_simplex[0].push_back(as<arma::uvec>(v) - 1);
   }
   //building other 0-d attributes
-  weights.push_back(as<arma::vec>(comb_lablacian["zero_weights"]));
+  weights.push_back(as<arma::vec>(comb_laplacian["zero_weights"]));
   length_const.push_back(arma::accu(weights[0]));
-  l0 = as<arma::sp_mat>(comb_lablacian["l0"]);
+  l0 = as<arma::sp_mat>(comb_laplacian["l0"]);
   n_simplex.push_back(pts_in_vertex.length());
 
   if(one_forms){
     //getting 1-dim laplacian data
-    l1 = as<arma::mat>(comb_lablacian["l1up"]) + as<arma::mat>(comb_lablacian["l1down"]);
-    weights.push_back(as<arma::vec>(comb_lablacian["one_weights"]));
+    l1 = as<arma::mat>(comb_laplacian["l1up"]) + as<arma::mat>(comb_laplacian["l1down"]);
+    weights.push_back(as<arma::vec>(comb_laplacian["one_weights"]));
     length_const.push_back(arma::accu(weights[1]));
-    arma::uvec edge_order = as<arma::uvec>(comb_lablacian["adjacency_ordered"]);
+    arma::uvec edge_order = as<arma::uvec>(comb_laplacian["adjacency_ordered"]);
     n_simplex.push_back(edge_order.n_elem);
 
     //building points in each edge
@@ -154,14 +154,59 @@ arma::mat LaplacianScorer::sample_scores(const arma::mat& funcs, int n_perm,
       int n_samps = std::min(max_samp, n_perm - sampled);
 
       arma::mat shuffled (n_samps, funcs.n_cols);
-      for(int k = 0; k < n_samps; k++) shuffled.row(k) = arma::shuffle(f);
+      for(arma::uword k = 0; k < n_samps; k++) shuffled.row(k) = arma::shuffle(f);
 
       scores(i, arma::span(sampled, sampled + n_samps - 1)) = score(shuffled, dim).t();
       sampled += n_samps;
-      }
+    }
   }
   return scores;
 }
+
+List LaplacianScorer::sample_with_covariate(const arma::mat& funcs, const arma::mat& cov,
+                                             int n_perm, int dim, int n_cores){
+  arma::uword n_funcs = funcs.n_rows;
+  arma::uword n_cov = cov.n_rows;
+
+  arma::mat func_scores (n_funcs, n_perm);
+  arma::cube cov_scores (n_funcs, n_cov, n_perm);
+
+  for(arma::uword i = 0; i < n_funcs; i++){
+
+    arma::rowvec f = funcs.row(i);
+
+    arma::mat f_shuffled (n_perm, funcs.n_cols);
+    arma::cube cov_shuffled(n_perm, funcs.n_cols, n_cov);
+
+    arma::uvec seq (funcs.n_cols);
+    for(arma::uword u = 0; u < funcs.n_cols; u++) seq(u) = u;
+
+    //shuffling functions and covariates
+    for(arma::uword j = 0; j < n_perm; j++){
+      arma::uvec seq_shuffled = arma::shuffle(seq);
+      f_shuffled.row(j) = f(seq_shuffled).t();
+      for(arma::uword k = 0; k < n_cov; k++){
+        for(arma::uword l = 0; l < funcs.n_cols; l++){
+          cov_shuffled(j, l, k) = cov(k, seq_shuffled(l));
+        }
+      }
+    }
+    //scoring shuffled functions and covariates
+    func_scores.row(i) = score(f_shuffled, dim).t();
+
+    arma::mat cov_scores_temp (n_cov, n_perm);
+    for(arma::uword k = 0; k < n_cov; k++){
+      //scores for the k-th covariate
+      cov_scores_temp.row(k) = score(cov_shuffled.slice(k), dim).t();
+    }
+    cov_scores.row(i) = cov_scores_temp;
+  }
+  List out = List::create(Named("func_scores") = func_scores,
+                          Named("cov_scores") = cov_scores);
+  return out;
+}
+
+
 
 RCPP_MODULE(mod_laplacian){
   class_<LaplacianScorer>("LaplacianScorer")
@@ -170,5 +215,6 @@ RCPP_MODULE(mod_laplacian){
 
   .method("score", &LaplacianScorer::score)
   .method("sample_scores", &LaplacianScorer::sample_scores)
+  .method("sample_with_covariate", &LaplacianScorer::sample_with_covariate)
   ;
 }

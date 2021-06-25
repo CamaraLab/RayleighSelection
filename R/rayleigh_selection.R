@@ -101,7 +101,7 @@
 
 rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1,
                                mc.preschedule = TRUE, one_forms = FALSE, weights = FALSE,
-                               optimize.p = NULL, max_perms = 16000, pow = 1,
+                               covariates = NULL, optimize.p = NULL, max_perms = 16000, pow = 1,
                                nextremes = c(seq(50, 250, 25), seq(300, 500, 50), seq(600, 1000, 100)),
                                alpha = 0.15){
   # Check class of f
@@ -110,6 +110,15 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
       f <- t(as.matrix(f))
     } else {
       f <- as.matrix(f)
+    }
+  }
+
+  # Check class of covariates
+  if ( !is.null(covariates) && !is(covariates,'matrix') && !is(covariates,'Matrix')) {
+    if (is(covariates ,'numeric')) {
+      covariates <- t(as.matrix(covariates))
+    } else {
+      covariates <- as.matrix(covariates)
     }
   }
 
@@ -124,16 +133,11 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
   lout <- combinatorial_laplacian(g2, one_forms, weights)
   scorer <- new(LaplacianScorer,lout, g2$points_in_vertex, g2$adjacency, one_forms)
 
-
   dims <- if(one_forms) c(0,1) else 0 # dimension to be considered
 
   out <- list()
-  is.windows <- Sys.info()['sysname'] == "Windows"
   use.gpd <- !is.na(optimize.p) && optimize.p == "gpd"
-  use.mclapply  <- !is.windows && nrow(f) > 1 && num_cores > 1
-
-  # Splitting functions for use with mclapply
-  if(use.mclapply) f.list <- split(f, row(f))
+  use.mclapply  <- (Sys.info()['sysname'] != "Windows") && nrow(f) > 1 && num_cores > 1
 
   set.seed(seed)
 
@@ -147,13 +151,40 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
     R <- as.numeric(scorer$score(f, d)) # computing scores
     out[[Rd]] <- R
 
+    if(!is.null(covariates)){
+      # Considering covariates for accessing significance
+      cov_obs <- scorer$score(covariates, d)
+
+      if(use.mclapply){
+        worker <- function(score, func){
+          func <- t(as.matrix(func))
+          samples <- scorer$sample_with_covariate(func, covariates, num_perms, d, 1)
+          p <- regresion.p.val(score, cov_obs, as.numeric(samples$func_scores), samples$cov_scores[1,,])
+          return(p)
+        }
+        p.vals <- parallel::mcmapply(worker, R, asplit(f, 1))
+      }else{
+        # Sampling values and splitting
+        samples <- scorer$sample_with_covariate(f, covariates, num_perms, d, num_cores)
+        func_samples <- asplit(samples$func_scores, 1)
+        cov_samples <- asplit(samples$cov_scores, 1)
+
+        p.vals <- mapply(regresion.p.val, R, replicate(nrow(f),  cov_obs, simplify = F) , func_samples, cov_samples)
+      }
+      out[[pd]] <- p.vals
+      next
+    }
+
+    R <- as.numeric(scorer$score(f, d)) # computing scores
+    out[[Rd]] <- R
+
     if(is.null(optimize.p)){
       # No optimization for p values is done
       if(use.mclapply){
         # Using mclapply to parallelize sampling
         worker <- function(func) scorer$sample_scores(t(as.matrix(func)), num_perms, d, 1)
 
-        samp.list <- parallel::mclapply(f.list, worker,
+        samp.list <- parallel::mclapply(asplit(f, 1), worker,
                                         mc.cores =  num_cores,
                                         mc.preschedule = mc.preschedule)
         samp <- samp.list[[1]]
@@ -174,7 +205,7 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
           )
         }
 
-        p.vals <- parallel::mcmapply(work, R, f.list,
+        p.vals <- parallel::mcmapply(work, R, asplit(f, 1),
                                      mc.cores = num_cores,
                                      mc.preschedule = mc.preschedule)
 

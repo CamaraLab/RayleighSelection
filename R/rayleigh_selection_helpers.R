@@ -150,3 +150,29 @@ optim.p <- function(observed, func, scorer, dim, use.gpd, min_perms, max_perms, 
   p[idx] <- num.le[!conv]/n_samps
   return(data.frame(p = p, n.conv = n.conv))
 }
+
+
+regresion.p.val <- function(func_obs, cov_obs, func_samps, cov_samps){
+  # Accesses the significance of score taking covariates into consideration
+  # Arguments
+  #   func_obs: observed laplacian score of function (double)
+  #   cov_obs: observed laplacian score of covariates
+  #   func_samps: samples of laplacian scores of function as a numeric
+  #   cov_samples: samples of laplacian score of covariates
+  #
+  # Return
+  #   p-value as a double
+
+  if(is(cov_obs, "numeric")) cov_obs <- t(as.matrix(cov_obs))
+  if(is(cov_samps, "numeric")) cov_samps <- t(as.matrix(cov_samps))
+
+  samples <- list(
+    fs = c(func_obs, func_samps),
+    cs = t(cbind(cov_obs, cov_samps))
+  )
+  linear.model <- lm(fs ~ cs, data = samples)
+  num_samps <- length(func_samps)
+  p.val <- sum(linear.model$residuals[2:num_samps+1] <= linear.model$residuals[1]) / num_samps
+  return(p.val)
+}
+

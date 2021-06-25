@@ -24,7 +24,7 @@ The scorer can also sample values from the null distribution obtained by shuffli
 
 \item{\code{score}}{Pushes functions defined by rows of funcs to the dim-skeleton by
 averaging and computes its laplacian score.\cr\cr
-\strong{Use} \code{scorer$(funcs, dim)}\cr\cr
+\strong{Use} \code{scorer$score(funcs, dim)}\cr\cr
 \strong{Parameters}\itemize{
  \item \code{funcs}: functions to be scored as a rows of a dense matrix
  \item \code{dim}: dimension of the laplacian (0 or 1)}

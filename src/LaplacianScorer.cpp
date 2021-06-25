@@ -18,7 +18,7 @@
 //'
 //' @field score Pushes functions defined by rows of funcs to the dim-skeleton by
 //' averaging and computes its laplacian score.\cr\cr
-//' \strong{Use} \code{scorer$(funcs, dim)}\cr\cr
+//' \strong{Use} \code{scorer$score(funcs, dim)}\cr\cr
 //' \strong{Parameters}\itemize{
 //'  \item \code{funcs}: functions to be scored as a rows of a dense matrix
 //'  \item \code{dim}: dimension of the laplacian (0 or 1)}
@@ -168,23 +168,32 @@ List LaplacianScorer::sample_with_covariate(const arma::mat& funcs, const arma::
   arma::uword n_funcs = funcs.n_rows;
   arma::uword n_cov = cov.n_rows;
 
-  arma::mat func_scores (n_funcs, n_perm);
-  arma::cube cov_scores (n_funcs, n_cov, n_perm);
+  arma::mat func_scores (n_funcs, n_perm);//the i-th row has sampled scores
+                                          //sampled associated to i-th function
 
+  arma::cube cov_scores (n_funcs, n_cov, n_perm);//cov_scores[i, j, k] has the sampled score
+                                                 //of the j-th covariate associated to
+                                                 //the k-th sample of the i-th function
+
+  #if defined(_OPENMP)
+  #pragma omp parallel for num_threads(n_cores)
+  #endif
   for(arma::uword i = 0; i < n_funcs; i++){
 
     arma::rowvec f = funcs.row(i);
 
-    arma::mat f_shuffled (n_perm, funcs.n_cols);
-    arma::cube cov_shuffled(n_perm, funcs.n_cols, n_cov);
+    arma::mat f_shuffled (n_perm, funcs.n_cols); //each row is a shuffled f
+    arma::cube cov_shuffled(n_perm, funcs.n_cols, n_cov); //each row in the k-th slice is a
+                                                          //shuffled k-th covariate
 
-    arma::uvec seq (funcs.n_cols);
+    arma::uvec seq (funcs.n_cols);//sequence 0, ... , funcs.n_cols - 1
     for(arma::uword u = 0; u < funcs.n_cols; u++) seq(u) = u;
 
     //shuffling functions and covariates
     for(arma::uword j = 0; j < n_perm; j++){
-      arma::uvec seq_shuffled = arma::shuffle(seq);
+      arma::uvec seq_shuffled = arma::shuffle(seq); //shuffling indices
       f_shuffled.row(j) = f(seq_shuffled).t();
+
       for(arma::uword k = 0; k < n_cov; k++){
         for(arma::uword l = 0; l < funcs.n_cols; l++){
           cov_shuffled(j, l, k) = cov(k, seq_shuffled(l));

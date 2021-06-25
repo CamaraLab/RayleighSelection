@@ -1,6 +1,3 @@
-# Needed to load C++ module
-Rcpp::loadModule("mod_laplacian", TRUE)
-
 #' Ranks features using the Combinatorial Laplacian Score for 0- and 1-forms.
 #'
 #' Given a nerve or a clique complex and a set of features consisting of functions with support on

@@ -1,3 +1,7 @@
+# Needed to load C++ module
+Rcpp::loadModule("mod_laplacian", TRUE)
+
+
 #' @useDynLib RayleighSelection
 #' @importFrom Rcpp evalCpp
 #' @exportPattern "^[[:alpha:]]+"

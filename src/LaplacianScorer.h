@@ -14,7 +14,7 @@ public:
   //sample scores by shuffling
   arma::mat sample_scores(const arma::mat&, int, int, int);
 
-  //Sample scores together with covariates
+  //sample scores together with covariates
   List sample_with_covariate(const arma::mat&, const arma::mat&, int, int, int);
 
 private:

@@ -11,7 +11,7 @@ rayleigh_selection(
   seed = 10,
   num_cores = 1,
   mc.preschedule = TRUE,
-  one_forms = TRUE,
+  one_forms = FALSE,
   weights = FALSE,
   optimize.p = NULL,
   max_perms = 16000,

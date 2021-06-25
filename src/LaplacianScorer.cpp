@@ -115,10 +115,12 @@ arma::vec LaplacianScorer::score(const arma::mat& funcs, int dim){
   //pushing function
   arma::uword n_funcs = funcs.n_rows;
   arma::mat pushed_func(n_funcs, n_simplex[dim], arma::fill::zeros);
-  for(arma::uword i = 0; i < n_funcs; ++i){
-    for(arma::uword j = 0; j < n_simplex[dim]; ++j){
-      for(const auto p: points_in_simplex[dim][j]) pushed_func(i,j) += funcs(i, p);
-      pushed_func(i,j) /= points_in_simplex[dim][j].size();
+  for(arma::uword j = 0; j < n_simplex[dim]; ++j){
+    int num_points = points_in_simplex[dim][j].size();
+    for(const auto p: points_in_simplex[dim][j]){
+      for(arma::uword i = 0; i < n_funcs; ++i){
+        pushed_func.at(i,j) += funcs.at(i, p)/num_points; //unsafe access
+      }
     }
   }
   //computing component orthogonal to constant (\tilde f)

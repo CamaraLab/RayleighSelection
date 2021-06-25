@@ -75,12 +75,14 @@ LaplacianScorer::LaplacianScorer(const List& comb_laplacian,
   //building other 0-d attributes
   weights.push_back(as<arma::vec>(comb_laplacian["zero_weights"]));
   length_const.push_back(arma::accu(weights[0]));
-  l0 = as<arma::sp_mat>(comb_laplacian["l0"]);
+  l.push_back(as<arma::sp_mat>(comb_laplacian["l0"]));
   n_simplex.push_back(pts_in_vertex.length());
 
   if(one_forms){
     //getting 1-dim laplacian data
-    l1 = as<arma::mat>(comb_laplacian["l1up"]) + as<arma::mat>(comb_laplacian["l1down"]);
+    arma::sp_mat _l1 (as<arma::mat>(comb_laplacian["l1up"]) +
+                      as<arma::mat>(comb_laplacian["l1down"]));
+    l.push_back(_l1);
     weights.push_back(as<arma::vec>(comb_laplacian["one_weights"]));
     length_const.push_back(arma::accu(weights[1]));
     arma::uvec edge_order = as<arma::uvec>(comb_laplacian["adjacency_ordered"]);
@@ -123,13 +125,8 @@ arma::vec LaplacianScorer::score(const arma::mat& funcs, int dim){
   pushed_func.each_col() -= pushed_func*weights[dim]/length_const[dim];
   //computing scores
   arma::vec score;
-  if(dim == 0){
-    score = arma::diagvec(pushed_func*l0*pushed_func.t()) /
-      (arma::square(pushed_func)*weights[dim]);
-  }else{
-    score = arma::diagvec(pushed_func*l1*pushed_func.t()) /
-      (arma::square(pushed_func)*weights[dim]);
-  }
+  score = arma::diagvec(pushed_func*l[dim]*pushed_func.t()) /
+    (arma::square(pushed_func)*weights[dim]);
   score.replace(arma::datum::nan, arma::datum::inf);
 
   return score;
@@ -183,6 +180,7 @@ List LaplacianScorer::sample_with_covariate(const arma::mat& funcs, const arma::
     arma::rowvec f = funcs.row(i);
 
     arma::mat f_shuffled (n_perm, funcs.n_cols); //each row is a shuffled f
+
     arma::cube cov_shuffled(n_perm, funcs.n_cols, n_cov); //each row in the k-th slice is a
                                                           //shuffled k-th covariate
 

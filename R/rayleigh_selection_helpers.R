@@ -167,6 +167,8 @@ regresion.p.val <- function(func_obs, cov_obs, func_samps, cov_samps){
   if(is(cov_obs, "numeric")) cov_obs <- as.matrix(cov_obs)
   func_samps <- as.numeric(func_samps)
 
+  if(is.infinite(func_obs)) return(1)
+
   samples <- list(
     fs = func_samps,
     cs = t(cov_samps)
@@ -175,7 +177,6 @@ regresion.p.val <- function(func_obs, cov_obs, func_samps, cov_samps){
     fs = func_obs,
     cs = t(cov_obs)
   )
-
   linear.model <- lm(fs ~ cs, data = samples)
   obs_residual <- func_obs - predict(linear.model, observed)
   p.val <- sum(linear.model$residuals <= obs_residual) / length(linear.model$residuals)

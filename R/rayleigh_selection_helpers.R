@@ -156,23 +156,29 @@ regresion.p.val <- function(func_obs, cov_obs, func_samps, cov_samps){
   # Accesses the significance of score taking covariates into consideration
   # Arguments
   #   func_obs: observed laplacian score of function (double)
-  #   cov_obs: observed laplacian score of covariates
-  #   func_samps: samples of laplacian scores of function as a numeric
+  #   cov_obs: observed laplacian score of covariates a row matrix or a numeric
+  #   func_samps: samples of laplacian scores of function
   #   cov_samples: samples of laplacian score of covariates
   #
   # Return
   #   p-value as a double
 
-  if(is(cov_obs, "numeric")) cov_obs <- t(as.matrix(cov_obs))
   if(is(cov_samps, "numeric")) cov_samps <- t(as.matrix(cov_samps))
+  if(is(cov_obs, "numeric")) cov_obs <- as.matrix(cov_obs)
+  func_samps <- as.numeric(func_samps)
 
   samples <- list(
-    fs = c(func_obs, func_samps),
-    cs = t(cbind(cov_obs, cov_samps))
+    fs = func_samps,
+    cs = t(cov_samps)
   )
+  observed <- list(
+    fs = func_obs,
+    cs = t(cov_obs)
+  )
+
   linear.model <- lm(fs ~ cs, data = samples)
-  num_samps <- length(func_samps)
-  p.val <- sum(linear.model$residuals[2:num_samps+1] <= linear.model$residuals[1]) / num_samps
+  obs_residual <- func_obs - predict(linear.model, observed)
+  p.val <- sum(linear.model$residuals <= obs_residual) / length(linear.model$residuals)
   return(p.val)
 }
 

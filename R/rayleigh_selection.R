@@ -177,11 +177,10 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
                          func_samples, cov_samples)
       }
       out[[pd]] <- p.vals
+      # Adjusting p-values with the Benjamini-Hochberg procedure
+      out[[qd]] <- p.adjust(out[[pd]], method = 'BH')
       next
     }
-
-    R <- as.numeric(scorer$score(f, d)) # computing scores
-    out[[Rd]] <- R
 
     if(is.null(optimize.p)){
       # No optimization for p values is done

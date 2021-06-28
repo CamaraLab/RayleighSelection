@@ -36,11 +36,14 @@
 #' also computed. By default is set to FALSE.
 #' @param weights when set to TRUE it takes 2-simplices into account when computing weights.
 #' By default is set to FALSE.
+#' @param covariates numeric vector or matrix specifying covariate functions to be samples in
+#' tandem with the functions in f. Each column correspond to a point and each row specifies a
+#' different covariate function. Is ignored when set to \code{NULL}, default value is \code{NULL}.
 #' @param optimize.p string indicating the type of optimization used for computing p-values.
 #' Must have value \code{NULL} for no optimization, \code{"perm"} for optimizing the calculation of
 #' p-values using only permutations, or \code{"gpd"} for using a permutations and GPD in optimizing p-value calculation.
-#' By default is set to \code{NULL}.
-#' @param max_perm maximum number of permutations to be used when computing p-values, only
+#' By default is set to \code{NULL}. Only implemented for when \code{covatiate} is \code{NULL}.
+#' @param max_perms maximum number of permutations to be used when computing p-values, only
 #' relevant when \code{optimize.p} is set to \code{"perm"} or \code{"gpd"}. By default is set to 16000.
 #' @param pow positive number indicating the power to which the samples of the null distribution and the associated
 #' score are to be transformed before computing a GPD approximation (only used when
@@ -159,7 +162,7 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
         worker <- function(score, func){
           func <- t(as.matrix(func))
           samples <- scorer$sample_with_covariate(func, covariates, num_perms, d, 1)
-          p <- regresion.p.val(score, cov_obs, as.numeric(samples$func_scores), samples$cov_scores[1,,])
+          p <- regresion.p.val(score, cov_obs, samples$func_scores[1,], samples$cov_scores[1,,])
           return(p)
         }
         p.vals <- parallel::mcmapply(worker, R, asplit(f, 1))
@@ -169,7 +172,9 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
         func_samples <- asplit(samples$func_scores, 1)
         cov_samples <- asplit(samples$cov_scores, 1)
 
-        p.vals <- mapply(regresion.p.val, R, replicate(nrow(f),  cov_obs, simplify = F) , func_samples, cov_samples)
+        p.vals <- mapply(regresion.p.val,
+                         R, replicate(nrow(f), cov_obs, simplify = F),
+                         func_samples, cov_samples)
       }
       out[[pd]] <- p.vals
       next

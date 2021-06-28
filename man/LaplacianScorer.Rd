@@ -38,6 +38,21 @@ averaging and computes its laplacian score.\cr\cr
  \item \code{dim}: dimension of the laplacian
  \item \code{n_cores}: number of cores to be used, parallelization requires code to be compiled with \code{openmp} }
 \strong{Value} Dense matrix with sampled scores where the i-th row has samples for the i-th function}
+
+\item{\code{sample_with_covariate}}{Takes samples of scores of function in tandem with scores of covariates
+by applying the same permutations of labels to both.
+\strong{Use} \code{scorer$sample_with_covariate(funcs, cov, n_perm, dim, n_cores)}
+\strong{Parameters}\itemize{
+ \item \code{funcs}: base functions as rows of a dense matrix
+ \item \code{cov}: covariates as rows of a dense matrix
+ \item \code{n_perm}: number of permutations
+ \item \code{dim}: dimension of the laplacian
+ \item \code{n_cores}: number of cores to be used, parallelization requires code to be compiled with \code{openmp} }
+\strong{Value} A list \code{out} with two elements \itemize{
+  \item \code{out$func_scores}: a dense matrix with sampled scores where the
+  i-th row has samples for the i-th function.
+  \item \code{out$cov_scores}: a dense 3-dimensional array where the position (i, j, k) has the sampled score
+  of the j-th covariate associated to the k-th sample of the i-th function.}}
 }}
 
 \examples{
@@ -56,4 +71,7 @@ scorer$score(t(as.matrix(c(0,1,1,0,0,0,0,0,0,1))), 0)
 # Sample scores by shuffling the function
 scorer$sample_scores(t(as.matrix(c(0,1,1,0,0,0,0,0,0,1))), 10, 0, 1)
 
+# Sample scores in tandem with a covariate
+scorer$sample_with_covariate(t(as.matrix(c(0,1,1,0,0,0,0,0,0,1))),
+                             t(as.matrix(c(0,1,0,1,0,0,0,0,0,1))), 10, 0, 1)
 }

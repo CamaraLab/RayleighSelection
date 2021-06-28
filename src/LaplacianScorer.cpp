@@ -32,6 +32,22 @@
 //'  \item \code{dim}: dimension of the laplacian
 //'  \item \code{n_cores}: number of cores to be used, parallelization requires code to be compiled with \code{openmp} }
 //' \strong{Value} Dense matrix with sampled scores where the i-th row has samples for the i-th function
+//'
+//' @field sample_with_covariate Takes samples of scores of function in tandem with scores of covariates
+//' by applying the same permutations of labels to both.
+//' \strong{Use} \code{scorer$sample_with_covariate(funcs, cov, n_perm, dim, n_cores)}
+//' \strong{Parameters}\itemize{
+//'  \item \code{funcs}: base functions as rows of a dense matrix
+//'  \item \code{cov}: covariates as rows of a dense matrix
+//'  \item \code{n_perm}: number of permutations
+//'  \item \code{dim}: dimension of the laplacian
+//'  \item \code{n_cores}: number of cores to be used, parallelization requires code to be compiled with \code{openmp} }
+//' \strong{Value} A list \code{out} with two elements \itemize{
+//'   \item \code{out$func_scores}: a dense matrix with sampled scores where the
+//'   i-th row has samples for the i-th function.
+//'   \item \code{out$cov_scores}: a dense 3-dimensional array where the position (i, j, k) has the sampled score
+//'   of the j-th covariate associated to the k-th sample of the i-th function.}
+//'
 //' @examples
 //' library(RayleighSelection)
 //'
@@ -48,6 +64,9 @@
 //' # Sample scores by shuffling the function
 //' scorer$sample_scores(t(as.matrix(c(0,1,1,0,0,0,0,0,0,1))), 10, 0, 1)
 //'
+//' # Sample scores in tandem with a covariate
+//' scorer$sample_with_covariate(t(as.matrix(c(0,1,1,0,0,0,0,0,0,1))),
+//'                              t(as.matrix(c(0,1,0,1,0,0,0,0,0,1))), 10, 0, 1)
 
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::plugins(openmp)]]
@@ -91,7 +110,7 @@ LaplacianScorer::LaplacianScorer(const List& comb_laplacian,
     //building points in each edge
     int i = 0;
     points_in_simplex.push_back( std::vector<arma::uvec>(n_simplex[1]) );
-    for (int j=0; j < n_simplex[0]; j++) {
+    for (int j = 0; j < n_simplex[0]; j++) {
       arma::uvec o1 = points_in_simplex[0][j];
       arma::uvec idxs = arma::find(adjacency.row(j));
 
@@ -105,6 +124,7 @@ LaplacianScorer::LaplacianScorer(const List& comb_laplacian,
         points_in_simplex[1][edge_order(i)-1] = edge_cover;
         i++;
       }
+
     }
   }
 }
@@ -139,25 +159,15 @@ arma::mat LaplacianScorer::sample_scores(const arma::mat& funcs, int n_perm,
   arma::uword n_funcs = funcs.n_rows;
   arma::mat scores(n_funcs, n_perm);
 
-  //setting a maximum number of samples to be taken at once
-  int max_samp = std::pow(10, 9)/n_simplex[dim];
-
   #if defined(_OPENMP)
   #pragma omp parallel for num_threads(n_cores)
   #endif
   for(arma::uword i = 0; i < n_funcs; i++){
     arma::rowvec f = funcs.row(i);
-    int sampled = 0;
+    arma::mat shuffled (n_perm, funcs.n_cols);
+    for(arma::uword k = 0; k < n_perm; k++) shuffled.row(k) = arma::shuffle(f);
 
-    while(sampled < n_perm){
-      int n_samps = std::min(max_samp, n_perm - sampled);
-
-      arma::mat shuffled (n_samps, funcs.n_cols);
-      for(arma::uword k = 0; k < n_samps; k++) shuffled.row(k) = arma::shuffle(f);
-
-      scores(i, arma::span(sampled, sampled + n_samps - 1)) = score(shuffled, dim).t();
-      sampled += n_samps;
-    }
+    scores.row(i) = score(shuffled, dim).t();
   }
   return scores;
 }
@@ -194,8 +204,8 @@ List LaplacianScorer::sample_with_covariate(const arma::mat& funcs, const arma::
       arma::uvec seq_shuffled = arma::shuffle(seq); //shuffling indices
       f_shuffled.row(j) = f(seq_shuffled).t();
 
-      for(arma::uword k = 0; k < n_cov; k++){
-        for(arma::uword l = 0; l < funcs.n_cols; l++){
+      for(arma::uword l = 0; l < funcs.n_cols; l++){
+        for(arma::uword k = 0; k < n_cov; k++){
           cov_shuffled(j, l, k) = cov(k, seq_shuffled(l));
         }
       }

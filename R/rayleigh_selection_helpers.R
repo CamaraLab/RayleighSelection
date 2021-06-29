@@ -170,7 +170,7 @@ regresion.p.val <- function(func_obs, cov_obs, func_samps, cov_samps){
   if(is.infinite(func_obs)) return(1)
 
   func.is.cov <- any(apply(cov_samps, 1,
-                           function(x) sum( abs(x - func_samps) )/length(func_samps) < 1e-9))
+                           function(x) max( abs(x - func_samps) ) < 1e-9))
   if(func.is.cov) return(1)
 
   samples <- data.frame(

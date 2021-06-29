@@ -24,7 +24,8 @@
 #' the set of points whose significance will be assessed in the simplicial complex. Each
 #' column corresponds to a point and each row specifies a different function.
 #' @param num_perms number of permutations used to build the null distribution for each
-#' feature. By default is set to 1000.
+#' feature. When \code{optimize.p} is not \code{NULL} this is the maximum number of
+#' permutations. By default is set to 1000.
 #' @param seed integer specifying the seed used to initialize the generator of permutations.
 #' By default is set to 10.
 #' @param num_cores integer specifying the number of cores to be used in the computation. By
@@ -43,8 +44,8 @@
 #' Must have value \code{NULL} for no optimization, \code{"perm"} for optimizing the calculation of
 #' p-values using only permutations, or \code{"gpd"} for using a permutations and GPD in optimizing p-value calculation.
 #' By default is set to \code{NULL}. Only implemented for when \code{covatiate} is \code{NULL}.
-#' @param max_perms maximum number of permutations to be used when computing p-values, only
-#' relevant when \code{optimize.p} is set to \code{"perm"} or \code{"gpd"}. By default is set to 16000.
+#' @param min_perms minimum number of permutations to be used when computing p-values, only
+#' relevant when \code{optimize.p} is set to \code{"perm"} or \code{"gpd"}. By default is set to 100.
 #' @param pow positive number indicating the power to which the samples of the null distribution and the associated
 #' score are to be transformed before computing a GPD approximation (only used when
 #' \code{optimize.p} is set to \code{"gdp"}).
@@ -104,7 +105,7 @@
 
 rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1,
                                mc.preschedule = TRUE, one_forms = FALSE, weights = FALSE,
-                               covariates = NULL, optimize.p = NULL, max_perms = 16000, pow = 1,
+                               covariates = NULL, optimize.p = NULL, min_perms = 100, pow = 1,
                                nextremes = c(seq(50, 250, 25), seq(300, 500, 50), seq(600, 1000, 100)),
                                alpha = 0.15){
   # Check class of f
@@ -187,14 +188,13 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
           p <- regresion.p.val(score, cov_obs, samples$func_scores[1,], samples$cov_scores[1,,])
           return(p)
         }
-        p.vals <- parallel::mcmapply(worker, R, asplit(f, 1))
+        p.vals <- parallel::mcmapply(worker, R, asplit(f, 1), mc.preschedule = mc.preschedule)
       }else{
         # Sampling values and splitting
         samples <- scorer$sample_with_covariate(f, covariates[finite.cov, , drop = F],
                                                 num_perms, d, num_cores)
         func_samples <- asplit(samples$func_scores, 1)
         cov_samples <- asplit(samples$cov_scores, 1)
-
         p.vals <- mapply(regresion.p.val,
                          R, replicate(nrow(f), cov_obs, simplify = F),
                          func_samples, cov_samples)
@@ -211,6 +211,7 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
         # Using mclapply to parallelize sampling
         worker <- function(func) scorer$sample_scores(t(as.matrix(func)), num_perms, d, 1)
 
+
         samp.list <- parallel::mclapply(asplit(f, 1), worker,
                                         mc.cores =  num_cores,
                                         mc.preschedule = mc.preschedule)
@@ -226,9 +227,11 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
       if(use.mclapply){
         # Using mcmapply to parallelize p-value approximation
         work <- function(score, func){
+
           return(
-            optim.p(score, t(as.matrix(func)), scorer, d, use.gpd, num_perms,
-                    max_perms, n.cores = 1, pow, nextremes, alpha)
+            optim.p(score, t(as.matrix(func)), scorer, d, use.gpd, min_perms = min_perms,
+                    max_perms = num_perms, n.cores = 1, pow = pow, nextremes =  nextremes,
+                    alpha = alpha)
           )
         }
 
@@ -240,8 +243,9 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
         out[[nd]] <- as.numeric(p.vals["n.conv",])
       }else{
         # Paralellization (if any) is done in C++ with OMP
-        p.vals <- optim.p(R, f, scorer, d, use.gpd, num_perms,
-                          max_perms, n.cores = num_cores, pow, nextremes, alpha)
+        p.vals <- optim.p(R, f, scorer, d, use.gpd, min_perms = min_perms,
+                          max_perms = num_perms, n.cores = num_cores, pow = pow,
+                          nextremes =  nextremes, alpha = alpha)
         out[[pd]] <- p.vals$p
         out[[nd]] <- p.vals$n.conv
       }

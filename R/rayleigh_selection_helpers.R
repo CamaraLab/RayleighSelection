@@ -189,7 +189,7 @@ regresion.p.val <- function(func_obs, cov_obs, func_samps, cov_samps){
     fs = func_obs,
     cs = t(cov_obs)
   )
-  linear.model <- lm(fs ~ cs, data = samples)
+  linear.model <- lm(fs ~ . , data = samples)
   obs_residual <- func_obs - predict(linear.model, observed)
   p.val <- sum(linear.model$residuals <= obs_residual) / length(linear.model$residuals)
   return(p.val)

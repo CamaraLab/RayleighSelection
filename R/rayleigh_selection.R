@@ -131,13 +131,13 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
       "optimize.p must be either NULL, 'perm' or 'gpd'. Proceding with no p-value optimization."
       )
   }
-  if(max(unlist(gg$points_in_vertex)) != ncol(f)){
+  if(max(unlist(g2$points_in_vertex)) != ncol(f)){
     stop(sprintf("The simplicial complex has %d points and f is defined on %d points.",
-                 max(unlist(gg$points_in_vertex)), ncol(f)))
+                 max(unlist(g2$points_in_vertex)), ncol(f)))
   }
-  if(!is.null(covariates) && max(unlist(gg$points_in_vertex)) != ncol(covariates)){
+  if(!is.null(covariates) && max(unlist(g2$points_in_vertex)) != ncol(covariates)){
     stop(sprintf("The simplicial complex has %d points and covariates is defined on %d points.",
-                 max(unlist(gg$points_in_vertex)), ncol(covariates)))
+                 max(unlist(g2$points_in_vertex)), ncol(covariates)))
   }
 
   lout <- combinatorial_laplacian(g2, one_forms, weights)

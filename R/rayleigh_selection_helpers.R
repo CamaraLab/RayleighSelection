@@ -1,6 +1,6 @@
 # This file contains helper functions for rayleight_selection. They are not exported.
 
-gpd.approx <- function(samples, observed, n.samp.quar = 250,
+gpd.approx <- function(samples, observed, n.samp.quar = 250, pow = 1,
                        nextremes = c(seq(50, 250, 25), seq(300, 500, 50), seq(600, 1000, 100)),
                        alpha = 0.15){
   # Computes gpd approximations of p-values and quartiles of these approximations
@@ -76,7 +76,7 @@ gpd.approx <- function(samples, observed, n.samp.quar = 250,
 }
 
 optim.p <- function(observed, func, scorer, dim, use.gpd, min_perms, max_perms, n.cores = 1,
-                    nextremes = c(seq(50, 250, 25), seq(300, 500, 50), seq(600, 1000, 100)),
+                    pow = 1, nextremes = c(seq(50, 250, 25), seq(300, 500, 50), seq(600, 1000, 100)),
                     alpha = 0.15){
   # Optimizes the calculation of p-values by permutation
   #
@@ -119,7 +119,7 @@ optim.p <- function(observed, func, scorer, dim, use.gpd, min_perms, max_perms, 
       # try gpd approximation
       log.p.gpd <- log.p.gpd[!conv, , drop = F]
 
-      gpd.out <- gpd.approx(samp, observed[idx], nextremes = nextremes, alpha = alpha)
+      gpd.out <- gpd.approx(samp, observed[idx], pow = pow, nextremes = nextremes, alpha = alpha)
 
       #condition 0: all values are finite
       cond0 <- apply(log.p.gpd, 1, function(x) all(is.finite(x))) &
@@ -169,11 +169,23 @@ regresion.p.val <- function(func_obs, cov_obs, func_samps, cov_samps){
 
   if(is.infinite(func_obs)) return(1)
 
-  samples <- list(
+  func.is.cov <- any(apply(cov_samps, 1,
+                           function(x) sum( abs(x - func_samps) )/length(func_samps) < 1e-9))
+  if(func.is.cov) return(1)
+
+  samples <- data.frame(
     fs = func_samps,
     cs = t(cov_samps)
   )
-  observed <- list(
+
+  #removing infinite values
+  samples <- samples[apply(samples, 1, function(x) all(is.finite(x))), ]
+  if(nrow(samples) == 0){
+    warning("There are no samples after eleminating infite values.")
+    return(1)
+  }
+
+  observed <- data.frame(
     fs = func_obs,
     cs = t(cov_obs)
   )

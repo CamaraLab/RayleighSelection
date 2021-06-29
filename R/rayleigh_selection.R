@@ -131,7 +131,14 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
       "optimize.p must be either NULL, 'perm' or 'gpd'. Proceding with no p-value optimization."
       )
   }
-
+  if(max(unlist(gg$points_in_vertex)) != ncol(f)){
+    stop(sprintf("The simplicial complex has %d points and f is defined on %d points.",
+                 max(unlist(gg$points_in_vertex)), ncol(f)))
+  }
+  if(!is.null(covariates) && max(unlist(gg$points_in_vertex)) != ncol(covariates)){
+    stop(sprintf("The simplicial complex has %d points and covariates is defined on %d points.",
+                 max(unlist(gg$points_in_vertex)), ncol(covariates)))
+  }
 
   lout <- combinatorial_laplacian(g2, one_forms, weights)
   scorer <- new(LaplacianScorer,lout, g2$points_in_vertex, g2$adjacency, one_forms)
@@ -157,18 +164,34 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
     if(!is.null(covariates)){
       # Considering covariates for accessing significance
       cov_obs <- scorer$score(covariates, d)
+      finite.cov <- is.finite(cov_obs)
+      if(all(!finite.cov)){
+        stop(
+          sprintf(
+            "All covaritares are constant on %d-simplices. Try to set covariates = NULL instead.", d
+          )
+        )
+      }
+      if(!all(finite.cov)){
+        warning(
+          sprintf("Some covariate is constant on %d-simplices and will be ignored.", d)
+        )
+      }
+      cov_obs <- cov_obs[finite.cov, , drop = F]
 
       if(use.mclapply){
         worker <- function(score, func){
           func <- t(as.matrix(func))
-          samples <- scorer$sample_with_covariate(func, covariates, num_perms, d, 1)
+          samples <- scorer$sample_with_covariate(func, covariates[finite.cov, , drop = F],
+                                                  num_perms, d, 1)
           p <- regresion.p.val(score, cov_obs, samples$func_scores[1,], samples$cov_scores[1,,])
           return(p)
         }
         p.vals <- parallel::mcmapply(worker, R, asplit(f, 1))
       }else{
         # Sampling values and splitting
-        samples <- scorer$sample_with_covariate(f, covariates, num_perms, d, num_cores)
+        samples <- scorer$sample_with_covariate(f, covariates[finite.cov, , drop = F],
+                                                num_perms, d, num_cores)
         func_samples <- asplit(samples$func_scores, 1)
         cov_samples <- asplit(samples$cov_scores, 1)
 
@@ -205,7 +228,7 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
         work <- function(score, func){
           return(
             optim.p(score, t(as.matrix(func)), scorer, d, use.gpd, num_perms,
-                    max_perms, n.cores = 1, nextremes, alpha)
+                    max_perms, n.cores = 1, pow, nextremes, alpha)
           )
         }
 
@@ -218,7 +241,7 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
       }else{
         # Paralellization (if any) is done in C++ with OMP
         p.vals <- optim.p(R, f, scorer, d, use.gpd, num_perms,
-                          max_perms, n.cores = num_cores, nextremes, alpha)
+                          max_perms, n.cores = num_cores, pow, nextremes, alpha)
         out[[pd]] <- p.vals$p
         out[[nd]] <- p.vals$n.conv
       }

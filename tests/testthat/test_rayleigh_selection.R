@@ -18,25 +18,32 @@ test_that("rayleigh_selection works with no optimizations",{
 })
 
 test_that("rayleigh_selection works with permutation optimization",{
-  expect_snapshot_value(
-    rayleigh_selection(gg, mnist[201:203,], num_perms = 400, seed = 10,
-                      one_forms = TRUE, optimize.p = "perm", min_perms = 50),
-    style = "serialize"
-    )
+  out <- rayleigh_selection(gg, mnist[201:203,], num_perms = 400, seed = 10,
+                            one_forms = TRUE, optimize.p = "perm", min_perms = 50)
+  expect_identical(ncol(out), 8L)
+  out$n0.conv <- NULL
+  out$n1.conv <- NULL
+  rand.cols <- c("p0", "q0", "p1", "q1")
+  expect_true(all(out[, names(out) %in% rand.cols] <= 1  &  out[, names(out) %in% rand.cols] >=0))
+  expect_snapshot_value(out[, !(names(out) %in% rand.cols)], style = "serialize")
 })
 
 test_that("rayleigh_selection works with GPD optimization",{
-  expect_snapshot_value(
-    rayleigh_selection(gg, mnist[201:203,], num_perms = 400, seed = 10,
-                        one_forms = TRUE, optimize.p = "gpd", min_perms = 50),
-    style = "serialize"
-    )
+  out <- rayleigh_selection(gg, mnist[201:203,], num_perms = 400, seed = 10,
+                            one_forms = TRUE, optimize.p = "gpd", min_perms = 50)
+  expect_identical(ncol(out), 8L)
+  out$n0.conv <- NULL
+  out$n1.conv <- NULL
+  rand.cols <- c("p0", "q0", "p1", "q1")
+  expect_true(all(out[, names(out) %in% rand.cols] <= 1  &  out[, names(out) %in% rand.cols] >=0))
+  expect_snapshot_value(out[, !(names(out) %in% rand.cols)], style = "serialize")
 })
 
 test_that("rayleigh_selection works with covariates",{
-  expect_snapshot_value(
-    rayleigh_selection(gg, mnist[201:203,], num_perms = 100, seed = 10,
-                       covariates = mnist[204:205,], one_forms = TRUE),
-    style = "serialize"
-  )
+  out <- rayleigh_selection(gg, mnist[201:203,], num_perms = 100, seed = 10,
+                            covariates = mnist[204:205,], one_forms = TRUE)
+  expect_identical(ncol(out), 6L)
+  rand.cols <- c("p0", "q0", "p1", "q1")
+  expect_true(all(out[, names(out) %in% rand.cols] <= 1  &  out[, names(out) %in% rand.cols] >=0))
+  expect_snapshot_value(out[, !(names(out) %in% rand.cols)], style = "serialize")
 })

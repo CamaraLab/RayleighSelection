@@ -19,7 +19,8 @@
 #' of the approximation are relatively close.
 #'
 #'
-#' @param g2 an object of the class \code{simplicial} containing the nerve or clique complex.
+#' @param g2 an object of the class \code{simplicial} containing the nerve or clique complex or a list of
+#' such objects.
 #' @param f a numeric vector or matrix specifying one or more functions with support on
 #' the set of points whose significance will be assessed in the simplicial complex. Each
 #' column corresponds to a point and each row specifies a different function.
@@ -39,11 +40,13 @@
 #' By default is set to FALSE.
 #' @param covariates numeric vector or matrix specifying covariate functions to be samples in
 #' tandem with the functions in f. Each column correspond to a point and each row specifies a
-#' different covariate function. Is ignored when set to \code{NULL}, default value is \code{NULL}.
+#' different covariate function. Is ignored when set to \code{NULL} and when \code{g2} is a
+#' list. Default value is \code{NULL}.
 #' @param optimize.p string indicating the type of optimization used for computing p-values.
 #' Must have value \code{NULL} for no optimization, \code{"perm"} for optimizing the calculation of
 #' p-values using only permutations, or \code{"gpd"} for using a permutations and GPD in optimizing p-value calculation.
-#' By default is set to \code{NULL}. Only implemented for when \code{covatiate} is \code{NULL}.
+#' By default is set to \code{NULL}. Only implemented for when \code{covatiate} is \code{NULL} and \text{g2} is a
+#' single simplicial complex.
 #' @param min_perms minimum number of permutations to be used when computing p-values, only
 #' relevant when \code{optimize.p} is set to \code{"perm"} or \code{"gpd"}. By default is set to 100.
 #' @param pow positive number indicating the power to which the samples of the null distribution and the associated
@@ -55,7 +58,6 @@
 #' @param alpha level of FDR control for choosing the number of extremes. Only used when
 #' \code{optimize.p} is set to \code{"gdp"}. By default is set to 0.15.
 #'
-#'
 #' @details When computing a p-value using a GPD, only null distribution samples in the first quartile are considered.
 #' The Combinatorial Laplacian Score and associated null distribution samples are transformed by the function
 #' \deqn{f(x) = (1 - (x - loc)/scale)^pow}
@@ -63,10 +65,12 @@
 #' the 5%-quantile. A number of extremes for fitting a GPD is chosen using the ForwardStop p-value adjustment, and
 #' quartiles for the p-value estimates are obtained by sampling GDP parameters form a multivariate normal distribution.
 #'
-#' @return Returns a data frame with the value of the Combinatorial Laplacian Score for 0- and 1-forms,
-#' the p-values, and the q-values computed using Benjamini-Hochberg procedure. If \code{optimize.p} is set
-#' to \code{"perm"} or \code{"gpd"} then then number of samples at which convergence of p-values was obtained is
-#' also returned.
+#' @return When g2 is a simplicial complex, returns a data frame with the value of the Combinatorial Laplacian
+#' Score for 0- and 1-forms, the p-values, and the q-values computed using Benjamini-Hochberg procedure.
+#' If \code{optimize.p} is set to \code{"perm"} or \code{"gpd"} then then number of samples at which convergence
+#' of p-values was obtained is also returned. When g2 is a list, returns a list with Combinatorial Laplacian
+#' Scores, individual p-values, combined p-values and q-values.
+#'
 #'
 #' @examples
 #' # Example 1
@@ -100,6 +104,19 @@
 #' # Compute R score, p-value, and q-value for the pixels 301st to 305th
 #' rayleigh_selection(gg, mnist[301:305,], one_forms = TRUE)
 #'
+#' # Compute another mapper representation with different percent_overlap
+#' m2.2 <-  mapper2D(distance_matrix = mnist_distances,
+#'                   filter_values = list(emb@data@data[,1], emb@data@data[,2]),
+#'                   num_intervals = c(30,30),
+#'                   percent_overlap = 50,
+#'                   num_bins_when_clustering = 10);
+#'
+#' # Compute the nerve complex and combine in list
+#' gg.list <- list(m2, nerve_complex(m2.2$points_in_vertex))
+#'
+#' # Compute R scores, p-values and q-values
+#' rayleigh_selection(gg.list, mnist[301:305,], one_forms = TRUE)
+#'
 #' @export
 #'
 
@@ -132,17 +149,29 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
       "optimize.p must be either NULL, 'perm' or 'gpd'. Proceding with no p-value optimization."
       )
   }
-  if(max(unlist(g2$points_in_vertex)) != ncol(f)){
-    stop(sprintf("The simplicial complex has %d points and f is defined on %d points.",
-                 max(unlist(g2$points_in_vertex)), ncol(f)))
+  if(!is(g2, "list")){
+    if(max(unlist(g2$points_in_vertex)) != ncol(f)){
+      stop(sprintf("The simplicial complex has %d points and f is defined on %d points.",
+                    max(unlist(g2$points_in_vertex)), ncol(f)))
+    }
+    if(!is.null(covariates) && max(unlist(g2$points_in_vertex)) != ncol(covariates)){
+      stop(sprintf("The simplicial complex has %d points and covariates is defined on %d points.",
+                    max(unlist(g2$points_in_vertex)), ncol(covariates)))
+    }
+    lout <- combinatorial_laplacian(g2, one_forms, weights)
+    scorer <- new(LaplacianScorer,lout, g2$points_in_vertex, g2$adjacency, one_forms)
   }
-  if(!is.null(covariates) && max(unlist(g2$points_in_vertex)) != ncol(covariates)){
-    stop(sprintf("The simplicial complex has %d points and covariates is defined on %d points.",
-                 max(unlist(g2$points_in_vertex)), ncol(covariates)))
-  }
+  if(is(g2, "list")){
+    points_in_vertex.list <- lapply(g2, function(x) x$points_in_vertex)
+    adjacency.list <- lapply(g2, function(x) x$adjacency)
+    lout.list <- lapply(g2, combinatorial_laplacian, one_forms = one_forms, weights = weights)
 
-  lout <- combinatorial_laplacian(g2, one_forms, weights)
-  scorer <- new(LaplacianScorer,lout, g2$points_in_vertex, g2$adjacency, one_forms)
+    has.wrong.size <- unlist(lapply(points_in_vertex.list, function(x) max(unlist(x)) != ncol(f)))
+    if(any(has.wrong.size)){
+      stop("Some simplicial complex has a different number of points to the number of rows of f")
+    }
+    scorer.ensemble <- new(ScorerEnsemble, lout.list, points_in_vertex.list, adjacency.list, one_forms)
+  }
 
   dims <- if(one_forms) c(0,1) else 0 # dimension to be considered
 
@@ -159,9 +188,35 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
     pd <- sprintf("p%d", d)
     qd<-sprintf("q%d", d)
 
+    if(is(g2, "list")){
+      individual.pd<-sprintf("individual.p%d", d)
+      R <- scorer.ensemble$score(f, d) # computing scores
+      out[[Rd]] <- R
+      if(use.mclapply){
+        worker <- function(score, func){
+          func <- t(as.matrix(func))
+          samples <- scorer.ensemble$sample_scores(func, num_perms, d, 1)
+          return(ensamble.p.values(score, samples[1,,]))
+        }
+        all.p <- parallel::mcmapply(worker, asplit(R, 1), asplit(func, 1),
+                                        mc.cores = num_cores, mc.preschedule = mc.preschedule)
+      }else{
+        samples <- scorer.ensemble$sample_scores(f, num_perms, d, num_cores)
+        all.p <- mapply(ensamble.p.values, asplit(R, 1), asplit(samples, 1), SIMPLIFY = F)
+      }
+      out[[individual.pd]] <- matrix(
+        unlist(lapply(all.p, function(x) x$individual.p)),
+        nrow = nrow(f), byrow = T
+      )
+      out[[pd]] <- unlist(lapply(all.p, function(x) x$combined.p))
+
+      # Adjusting p-values with the Benjamini-Hochberg procedure
+      out[[qd]] <- p.adjust(out[[pd]], method = 'BH')
+      next
+    }
+
     R <- as.numeric(scorer$score(f, d)) # computing scores
     out[[Rd]] <- R
-
     if(!is.null(covariates)){
       # Considering covariates for accessing significance
       cov_obs <- scorer$score(covariates, d)
@@ -188,7 +243,8 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
           p <- regresion.p.val(score, cov_obs, samples$func_scores[1,], samples$cov_scores[1,,])
           return(p)
         }
-        p.vals <- parallel::mcmapply(worker, R, asplit(f, 1), mc.preschedule = mc.preschedule)
+        p.vals <- parallel::mcmapply(worker, R, asplit(f, 1),
+                                     mc.cores = num_cores, mc.preschedule = mc.preschedule)
       }else{
         # Sampling values and splitting
         samples <- scorer$sample_with_covariate(f, covariates[finite.cov, , drop = F],
@@ -226,14 +282,10 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
       # Optimization for p-values is done
       if(use.mclapply){
         # Using mcmapply to parallelize p-value approximation
-        work <- function(score, func){
-
-          return(
-            optim.p(score, t(as.matrix(func)), scorer, d, use.gpd, min_perms = min_perms,
-                    max_perms = num_perms, n.cores = 1, pow = pow, nextremes =  nextremes,
-                    alpha = alpha)
-          )
-        }
+        work <- function(score, func) optim.p(
+          score, t(as.matrix(func)), scorer, d, use.gpd, min_perms = min_perms,
+          max_perms = num_perms, n.cores = 1, pow = pow, nextremes =  nextremes,
+          alpha = alpha)
 
         p.vals <- parallel::mcmapply(work, R, asplit(f, 1),
                                      mc.cores = num_cores,
@@ -253,5 +305,6 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
     # Adjusting p-values with the Benjamini-Hochberg procedure
     out[[qd]] <- p.adjust(out[[pd]], method = 'BH')
   }
-  return(as.data.frame(out))
+  if(!is(g2, "list")) return(as.data.frame(out))
+  if(is(g2, "list")) return(out)
 }

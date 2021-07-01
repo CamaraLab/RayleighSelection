@@ -156,9 +156,10 @@ regresion.p.val <- function(func_obs, cov_obs, func_samps, cov_samps){
   # Accesses the significance of score taking covariates into consideration
   # Arguments
   #   func_obs: observed laplacian score of function (double)
-  #   cov_obs: observed laplacian score of covariates a row matrix or a numeric
+  #   cov_obs: observed laplacian score of covariates as a vector matrix or a numeric
   #   func_samps: samples of laplacian scores of function
-  #   cov_samples: samples of laplacian score of covariates
+  #   cov_samps: samples of laplacian score of covariates as a vector or as a matrix
+  #      where each row has the samples of a covariate.
   #
   # Return
   #   p-value as a double
@@ -169,14 +170,6 @@ regresion.p.val <- function(func_obs, cov_obs, func_samps, cov_samps){
 
   if(is.infinite(func_obs)) return(1)
 
-  #test if any of the covariates equals the function
-  func.is.cov <- any(
-    apply(
-      cov_samps, 1,
-      function(x) all( abs(x - func_samps) <= 1e-9*(abs(x) + abs(func_samps))/2 )
-    )
-  )
-  if(func.is.cov) return(1)
 
   samples <- data.frame(
     fs = func_samps,
@@ -190,6 +183,14 @@ regresion.p.val <- function(func_obs, cov_obs, func_samps, cov_samps){
     return(1)
   }
 
+  #test if any of the covariates equals the function
+  func.is.cov <- apply(
+    samples[,2:ncol(samples), drop = F], 2,
+    function(x) all(abs(x - samples[,1]) <= 1e-9*(abs(x) + abs(samples[,1]))/2)
+  )
+
+  if(any(func.is.cov)) return(1)
+
   observed <- data.frame(
     fs = func_obs,
     cs = t(cov_obs)
@@ -199,4 +200,51 @@ regresion.p.val <- function(func_obs, cov_obs, func_samps, cov_samps){
   p.val <- sum(linear.model$residuals <= obs_residual) / length(linear.model$residuals)
   return(p.val)
 }
+
+ensamble.p.values <- function(observed, samples){
+  # Computes the combined p-value of the observations given the samples
+  # Arguments
+  #   observed: observed scores as a numeric, vector or row matrix
+  #   samples: samples as a matrix, each column corresponding to an observation
+  # Return
+  #   Combined p-value and individual p-values
+
+  # remove infinite vales
+  samples <- samples[ apply(is.finite(samples), 1, all),  ]
+  if(nrow(samples) == 0) return(1)
+
+  p.vals <- apply(t(samples) <= as.numeric(observed), 1, sum)/nrow(samples)
+  return(
+    list("combined.p" = combine.p.values(p.vals, samples), "individual.p" = p.vals)
+  )
+}
+
+combine.p.values <- function(p.vals, samples, method = "KM"){
+  # Cobines p-values associated to samples using Brown's method
+  # Arguments
+  #   p.vals: p-values as a numeric
+  #   samples: samples as a matrix, each column corresponding to an observation
+  #   method: Method used to combine p-valies, can be "KM" for the Kost-McDermott method
+  #         or "EBM" for the empirical Brown's method (Gibbs et. al. 16)
+
+  if(any(p.vals == 0)) return(0)
+  if(method == "EBM"){
+    w <- apply(
+      samples, 2,
+      function(x) -2*log(ecdf(x)(x))
+    )
+    cov.log.p <- cov(w)
+  }
+  if(method == "KM"){
+    rho <- cor(samples)
+    cov.log.p <- 3.263*rho + 0.71*rho^2 + 0.027*rho^3
+  }
+  expectation <- 2*length(p.vals)
+  variance <- 2*expectation + 2*sum(cov.log.p[lower.tri(cov.log.p)])
+  f.val <- (expectation^2) / variance
+  c.val <- variance / (2*expectation)
+  p.combined <- pchisq(-2*sum(log(p.vals)) / c.val, df = 2*f.val, lower.tail = F)
+  return(p.combined)
+}
+
 

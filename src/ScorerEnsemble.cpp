@@ -89,7 +89,7 @@ arma::mat ScorerEnsemble::score(const arma::mat& funcs, int dim){
   return scores;
   }
 
-arma::cube ScorerEnsemble::sample_scores(const arma::mat& funcs, int n_perm,
+arma::cube ScorerEnsemble::sample_scores(const arma::mat& funcs, arma::uword n_perm,
                                     int dim, int n_cores){
   arma::uword n_funcs = funcs.n_rows;
   arma::cube scores(n_funcs, n_perm, n_scorers);

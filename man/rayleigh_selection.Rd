@@ -22,7 +22,8 @@ rayleigh_selection(
 )
 }
 \arguments{
-\item{g2}{an object of the class \code{simplicial} containing the nerve or clique complex.}
+\item{g2}{an object of the class \code{simplicial} containing the nerve or clique complex or a list of
+such objects.}
 
 \item{f}{a numeric vector or matrix specifying one or more functions with support on
 the set of points whose significance will be assessed in the simplicial complex. Each
@@ -50,12 +51,14 @@ By default is set to FALSE.}
 
 \item{covariates}{numeric vector or matrix specifying covariate functions to be samples in
 tandem with the functions in f. Each column correspond to a point and each row specifies a
-different covariate function. Is ignored when set to \code{NULL}, default value is \code{NULL}.}
+different covariate function. Is ignored when set to \code{NULL} and when \code{g2} is a
+list. Default value is \code{NULL}.}
 
 \item{optimize.p}{string indicating the type of optimization used for computing p-values.
 Must have value \code{NULL} for no optimization, \code{"perm"} for optimizing the calculation of
 p-values using only permutations, or \code{"gpd"} for using a permutations and GPD in optimizing p-value calculation.
-By default is set to \code{NULL}. Only implemented for when \code{covatiate} is \code{NULL}.}
+By default is set to \code{NULL}. Only implemented for when \code{covatiate} is \code{NULL} and \text{g2} is a
+single simplicial complex.}
 
 \item{min_perms}{minimum number of permutations to be used when computing p-values, only
 relevant when \code{optimize.p} is set to \code{"perm"} or \code{"gpd"}. By default is set to 100.}
@@ -72,10 +75,11 @@ Only used when \code{optimize.p} is set to \code{"gdp"}. By default is set to
 \code{optimize.p} is set to \code{"gdp"}. By default is set to 0.15.}
 }
 \value{
-Returns a data frame with the value of the Combinatorial Laplacian Score for 0- and 1-forms,
-the p-values, and the q-values computed using Benjamini-Hochberg procedure. If \code{optimize.p} is set
-to \code{"perm"} or \code{"gpd"} then then number of samples at which convergence of p-values was obtained is
-also returned.
+When g2 is a simplicial complex, returns a data frame with the value of the Combinatorial Laplacian
+Score for 0- and 1-forms, the p-values, and the q-values computed using Benjamini-Hochberg procedure.
+If \code{optimize.p} is set to \code{"perm"} or \code{"gpd"} then then number of samples at which convergence
+of p-values was obtained is also returned. When g2 is a list, returns a list with Combinatorial Laplacian
+Scores, individual p-values, combined p-values and q-values.
 }
 \description{
 Given a nerve or a clique complex and a set of features consisting of functions with support on
@@ -135,5 +139,18 @@ gg <- nerve_complex(m2$points_in_vertex)
 
 # Compute R score, p-value, and q-value for the pixels 301st to 305th
 rayleigh_selection(gg, mnist[301:305,], one_forms = TRUE)
+
+# Compute another mapper representation with different percent_overlap
+m2.2 <-  mapper2D(distance_matrix = mnist_distances,
+                  filter_values = list(emb@data@data[,1], emb@data@data[,2]),
+                  num_intervals = c(30,30),
+                  percent_overlap = 50,
+                  num_bins_when_clustering = 10);
+
+# Compute the nerve complex and combine in list
+gg.list <- list(m2, nerve_complex(m2.2$points_in_vertex))
+
+# Compute R scores, p-values and q-values
+rayleigh_selection(gg.list, mnist[301:305,], one_forms = TRUE)
 
 }

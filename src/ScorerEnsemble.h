@@ -13,7 +13,7 @@ public:
   arma::mat score(const arma::mat&, int);
 
   //sample scores of all complexes in tandem
-  arma::cube sample_scores(const arma::mat&, int, int, int);
+  arma::cube sample_scores(const arma::mat&, arma::uword, int, int);
 
 private:
   //scorers

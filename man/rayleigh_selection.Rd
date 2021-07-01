@@ -15,7 +15,7 @@ rayleigh_selection(
   weights = FALSE,
   covariates = NULL,
   optimize.p = NULL,
-  max_perms = 16000,
+  min_perms = 100,
   pow = 1,
   nextremes = c(seq(50, 250, 25), seq(300, 500, 50), seq(600, 1000, 100)),
   alpha = 0.15
@@ -29,7 +29,8 @@ the set of points whose significance will be assessed in the simplicial complex.
 column corresponds to a point and each row specifies a different function.}
 
 \item{num_perms}{number of permutations used to build the null distribution for each
-feature. By default is set to 1000.}
+feature. When \code{optimize.p} is not \code{NULL} this is the maximum number of
+permutations. By default is set to 1000.}
 
 \item{seed}{integer specifying the seed used to initialize the generator of permutations.
 By default is set to 10.}
@@ -56,8 +57,8 @@ Must have value \code{NULL} for no optimization, \code{"perm"} for optimizing th
 p-values using only permutations, or \code{"gpd"} for using a permutations and GPD in optimizing p-value calculation.
 By default is set to \code{NULL}. Only implemented for when \code{covatiate} is \code{NULL}.}
 
-\item{max_perms}{maximum number of permutations to be used when computing p-values, only
-relevant when \code{optimize.p} is set to \code{"perm"} or \code{"gpd"}. By default is set to 16000.}
+\item{min_perms}{minimum number of permutations to be used when computing p-values, only
+relevant when \code{optimize.p} is set to \code{"perm"} or \code{"gpd"}. By default is set to 100.}
 
 \item{pow}{positive number indicating the power to which the samples of the null distribution and the associated
 score are to be transformed before computing a GPD approximation (only used when

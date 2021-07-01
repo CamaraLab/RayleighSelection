@@ -1,5 +1,6 @@
 # Needed to load C++ module
 Rcpp::loadModule("mod_laplacian", TRUE)
+Rcpp::loadModule("mod_scorer_ensemble", TRUE)
 
 
 #' @useDynLib RayleighSelection

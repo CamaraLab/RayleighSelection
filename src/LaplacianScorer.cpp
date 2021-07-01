@@ -1,14 +1,14 @@
 //' Computes and samples 0 and 1-dimensional laplacian scores.
 //'
 //' Builds an object to compute and sample values for the combinatorial laplacian score of functions
-//' defined on the set of points underlying a given simplex. Takes in data about the simplex and
+//' defined on the set of points underlying a given simplicial complex. Takes in data about the complex and
 //' its 0- (and possibly 1-) dimensional laplacian to build a scorer. The scorer pushes functions defined on
-//' the points underlying the simplex to the 0- (or 1-) dimensional skeleton by averaging over the points associated
-//' to each simplex and evaluates the Rayleigh quotient of the normalized graph laplacean on the pushed function.
+//' the points underlying the complex to the 0- (or 1-) dimensional skeleton by averaging over the points associated
+//' to each complex and evaluates the Rayleigh quotient of the normalized graph laplacean on the pushed function.
 //' The scorer can also sample values from the null distribution obtained by shuffling the labels of the underlying points.
 //'
 //' @name LaplacianScorer
-//' @field new Constructs a scorer using  data on the simplex and its associated laplacian.\cr\cr
+//' @field new Constructs a scorer using  data on the complex and its associated laplacian.\cr\cr
 //' \strong{Use} \code{scorer <- new(LaplacianScorer, comb_laplacian, pts_in_vertex, adjacency, one_forms)}\cr\cr
 //' \strong{Parameters}\itemize{
 //'  \item \code{comb_laplacian}: output of \code{\link{combinatorial_laplacian}}
@@ -110,7 +110,7 @@ LaplacianScorer::LaplacianScorer(const List& comb_laplacian,
     //building points in each edge
     int i = 0;
     points_in_simplex.push_back( std::vector<arma::uvec>(n_simplex[1]) );
-    for (int j = 0; j < n_simplex[0]; j++) {
+    for (arma::uword j = 0; j < n_simplex[0]; j++) {
       arma::uvec o1 = points_in_simplex[0][j];
       arma::uvec idxs = arma::find(adjacency.row(j));
 
@@ -136,7 +136,7 @@ arma::vec LaplacianScorer::score(const arma::mat& funcs, int dim){
   arma::uword n_funcs = funcs.n_rows;
   arma::mat pushed_func(n_funcs, n_simplex[dim], arma::fill::zeros);
   for(arma::uword j = 0; j < n_simplex[dim]; ++j){
-    int num_points = points_in_simplex[dim][j].size();
+    double num_points = points_in_simplex[dim][j].size();
     for(const auto p: points_in_simplex[dim][j]){
       for(arma::uword i = 0; i < n_funcs; ++i){
         pushed_func.at(i,j) += funcs.at(i, p)/num_points; //unsafe access
@@ -154,7 +154,7 @@ arma::vec LaplacianScorer::score(const arma::mat& funcs, int dim){
   return score;
 }
 
-arma::mat LaplacianScorer::sample_scores(const arma::mat& funcs, int n_perm,
+arma::mat LaplacianScorer::sample_scores(const arma::mat& funcs, arma::uword n_perm,
                                           int dim, int n_cores){
   arma::uword n_funcs = funcs.n_rows;
   arma::mat scores(n_funcs, n_perm);
@@ -173,7 +173,7 @@ arma::mat LaplacianScorer::sample_scores(const arma::mat& funcs, int n_perm,
 }
 
 List LaplacianScorer::sample_with_covariate(const arma::mat& funcs, const arma::mat& cov,
-                                             int n_perm, int dim, int n_cores){
+                                             arma::uword n_perm, int dim, int n_cores){
   arma::uword n_funcs = funcs.n_rows;
   arma::uword n_cov = cov.n_rows;
 

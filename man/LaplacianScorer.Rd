@@ -5,16 +5,16 @@
 \title{Computes and samples 0 and 1-dimensional laplacian scores.}
 \description{
 Builds an object to compute and sample values for the combinatorial laplacian score of functions
-defined on the set of points underlying a given simplex. Takes in data about the simplex and
+defined on the set of points underlying a given simplicial complex. Takes in data about the complex and
 its 0- (and possibly 1-) dimensional laplacian to build a scorer. The scorer pushes functions defined on
-the points underlying the simplex to the 0- (or 1-) dimensional skeleton by averaging over the points associated
-to each simplex and evaluates the Rayleigh quotient of the normalized graph laplacean on the pushed function.
+the points underlying the complex to the 0- (or 1-) dimensional skeleton by averaging over the points associated
+to each complex and evaluates the Rayleigh quotient of the normalized graph laplacean on the pushed function.
 The scorer can also sample values from the null distribution obtained by shuffling the labels of the underlying points.
 }
 \section{Fields}{
 
 \describe{
-\item{\code{new}}{Constructs a scorer using  data on the simplex and its associated laplacian.\cr\cr
+\item{\code{new}}{Constructs a scorer using  data on the complex and its associated laplacian.\cr\cr
 \strong{Use} \code{scorer <- new(LaplacianScorer, comb_laplacian, pts_in_vertex, adjacency, one_forms)}\cr\cr
 \strong{Parameters}\itemize{
  \item \code{comb_laplacian}: output of \code{\link{combinatorial_laplacian}}

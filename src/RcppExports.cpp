@@ -33,11 +33,13 @@ END_RCPP
 }
 
 RcppExport SEXP _rcpp_module_boot_mod_laplacian();
+RcppExport SEXP _rcpp_module_boot_mod_scorer_ensemble();
 
 static const R_CallMethodDef CallEntries[] = {
     {"_RayleighSelection_adjacencyCpp", (DL_FUNC) &_RayleighSelection_adjacencyCpp, 2},
     {"_RayleighSelection_l1down", (DL_FUNC) &_RayleighSelection_l1down, 3},
     {"_rcpp_module_boot_mod_laplacian", (DL_FUNC) &_rcpp_module_boot_mod_laplacian, 0},
+    {"_rcpp_module_boot_mod_scorer_ensemble", (DL_FUNC) &_rcpp_module_boot_mod_scorer_ensemble, 0},
     {NULL, NULL, 0}
 };
 

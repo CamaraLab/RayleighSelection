@@ -169,8 +169,13 @@ regresion.p.val <- function(func_obs, cov_obs, func_samps, cov_samps){
 
   if(is.infinite(func_obs)) return(1)
 
-  func.is.cov <- any(apply(cov_samps, 1,
-                           function(x) max( abs(x - func_samps) ) < 1e-9))
+  #test if any of the covariates equals the function
+  func.is.cov <- any(
+    apply(
+      cov_samps, 1,
+      function(x) all( abs(x - func_samps) <= 1e-9*(abs(x) + abs(func_samps))/2 )
+    )
+  )
   if(func.is.cov) return(1)
 
   samples <- data.frame(

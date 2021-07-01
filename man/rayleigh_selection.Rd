@@ -11,8 +11,9 @@ rayleigh_selection(
   seed = 10,
   num_cores = 1,
   mc.preschedule = TRUE,
-  one_forms = TRUE,
+  one_forms = FALSE,
   weights = FALSE,
+  covariates = NULL,
   optimize.p = NULL,
   max_perms = 16000,
   pow = 1,
@@ -46,10 +47,17 @@ also computed. By default is set to FALSE.}
 \item{weights}{when set to TRUE it takes 2-simplices into account when computing weights.
 By default is set to FALSE.}
 
+\item{covariates}{numeric vector or matrix specifying covariate functions to be samples in
+tandem with the functions in f. Each column correspond to a point and each row specifies a
+different covariate function. Is ignored when set to \code{NULL}, default value is \code{NULL}.}
+
 \item{optimize.p}{string indicating the type of optimization used for computing p-values.
 Must have value \code{NULL} for no optimization, \code{"perm"} for optimizing the calculation of
 p-values using only permutations, or \code{"gpd"} for using a permutations and GPD in optimizing p-value calculation.
-By default is set to \code{NULL}.}
+By default is set to \code{NULL}. Only implemented for when \code{covatiate} is \code{NULL}.}
+
+\item{max_perms}{maximum number of permutations to be used when computing p-values, only
+relevant when \code{optimize.p} is set to \code{"perm"} or \code{"gpd"}. By default is set to 16000.}
 
 \item{pow}{positive number indicating the power to which the samples of the null distribution and the associated
 score are to be transformed before computing a GPD approximation (only used when
@@ -59,11 +67,8 @@ score are to be transformed before computing a GPD approximation (only used when
 Only used when \code{optimize.p} is set to \code{"gdp"}. By default is set to
 \code{c(seq(50, 250, 25), seq(300, 500, 50), seq(600, 1000, 100))}.}
 
-\item{alpha}{level of FDR control for fitting a GPD. Only used when \code{optimize.p} is set to \code{"gdp"}.
-By default is set to 0.15.}
-
-\item{max_perm}{maximum number of permutations to be used when computing p-values, only
-relevant when \code{optimize.p} is set to \code{"perm"} or \code{"gpd"}. By default is set to 16000.}
+\item{alpha}{level of FDR control for choosing the number of extremes. Only used when
+\code{optimize.p} is set to \code{"gdp"}. By default is set to 0.15.}
 }
 \value{
 Returns a data frame with the value of the Combinatorial Laplacian Score for 0- and 1-forms,

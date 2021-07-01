@@ -14,14 +14,17 @@ public:
   //sample scores by shuffling
   arma::mat sample_scores(const arma::mat&, int, int, int);
 
+  //sample scores together with covariates
+  List sample_with_covariate(const arma::mat&, const arma::mat&, int, int, int);
+
 private:
-  //0-d laplacian
-  arma::sp_mat l0;
+  // All attributes are vectors with 1 or 2 elements, depending on whether one_forms is true.
+  // The first entry refers to 0-d data end the second (if present) refers to 1-d data.
 
-  //1-d laplacian (if present)
-  arma::mat l1;
+  //laplacians
+  std::vector<arma::sp_mat> l;
 
-  //weights [0-dim, 1-dim]
+  //weights
   std::vector<arma::vec> weights;
 
   //number of simplices

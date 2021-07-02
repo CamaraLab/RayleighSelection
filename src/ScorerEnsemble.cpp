@@ -20,7 +20,7 @@
 //' \strong{Parameters}\itemize{
 //'  \item \code{funcs}: functions to be scored as a rows of a dense matrix
 //'  \item \code{dim}: dimension of the laplacian (0 or 1)}
-//' \strong{Value} Scores of functions as a metrix. The value in position (i,j) is the score of
+//' \strong{Value} Scores of functions as a matrix. The value in position (i,j) is the score of
 //'                the i-th function on the j-th complex.
 //'
 //' @field sample_scores Takes samples of scores by permuting point labels\cr\cr

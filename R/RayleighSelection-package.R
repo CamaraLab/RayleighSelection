@@ -18,6 +18,7 @@ Rcpp::loadModule("mod_scorer_ensemble", TRUE)
 #' @import RSpectra
 #' @import RANN
 #' @import TDAmapper
+#' @import abind
 
 # dummy function to force imports
 .import.dummy <- function() {return(NULL)}

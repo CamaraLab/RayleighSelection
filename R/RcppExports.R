@@ -106,6 +106,23 @@ NULL
 #'  \item \code{n_cores}: number of cores to be used, parallelization requires code to be compiled with \code{openmp} }
 #' \strong{Value} Dense 3-dimensional array with sampled scores where position (i,j,k) has the score of the j-th
 #'                permutation of the i-th function in the k-th complex.
+#'
+#' @field sample_with_covariate Takes samples of scores of function in tandem with scores of covariates
+#' by applying the same permutations of labels to both.
+#' \strong{Use} \code{scorer$sample_with_covariate(funcs, cov, n_perm, dim, n_cores)}
+#' \strong{Parameters}\itemize{
+#'  \item \code{funcs}: base functions as rows of a dense matrix
+#'  \item \code{cov}: covariates as rows of a dense matrix
+#'  \item \code{n_perm}: number of permutations
+#'  \item \code{dim}: dimension of the laplacian
+#'  \item \code{n_cores}: number of cores to be used, parallelization requires code to be compiled with \code{openmp} }
+#' \strong{Value} A list \code{out} with as many elements as there are complexes in the ensemble. Each element
+#'   of the list is itself a list with two elements: \itemize{
+#'   \item \code{func_scores}: a dense matrix with sampled scores where the
+#'   i-th row has samples for the i-th function.
+#'   \item \code{cov_scores}: a dense 3-dimensional array where the position (i, j, k) has the sampled score
+#'   of the j-th covariate associated to the k-th sample of the i-th function.}
+#'
 #' @examples
 #' library(RayleighSelection)
 #'

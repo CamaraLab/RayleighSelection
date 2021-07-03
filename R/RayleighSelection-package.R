@@ -19,6 +19,8 @@ Rcpp::loadModule("mod_scorer_ensemble", TRUE)
 #' @import RANN
 #' @import TDAmapper
 #' @import abind
+#' @import eva
+
 
 # dummy function to force imports
 .import.dummy <- function() {return(NULL)}

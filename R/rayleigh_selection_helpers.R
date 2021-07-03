@@ -16,12 +16,10 @@ gpd.approx <- function(samples, observed, n.samp.quar = 250, pow = 1,
   #  data frame with the natural log of the p-values and the first ant third quartiles of the approximation
   samples <- as.numeric(samples)
 
-  out <- data.frame(log.p = NA,
-                    log.q1 = NA,
-                    log.q3 = NA)
+  out <- data.frame(log.p = NA, log.q1 = NA, log.q3 = NA)
 
   # Only consider values in the lowers quantile for fitting a gpd
-  num.ext <- sort(nextremes[nextremes*4 < ncol(samples)])
+  num.ext <- sort(nextremes[nextremes*4 < length(samples)])
   if(length(num.ext) == 0) return(out)
 
   # Transform samples and scores
@@ -31,46 +29,46 @@ gpd.approx <- function(samples, observed, n.samp.quar = 250, pow = 1,
   samp <- ( 1 - (samples[(samples <= samp.loc) & is.finite(samples)] - samp.loc)/samp.scale )^pow
   score <- ( 1 - (observed - samp.loc)/samp.scale)^pow
 
-    # Using ForwardStop to select the number of extreme samples
-    gpd.test <- tryCatch(
-      eva::gpdSeqTests(samp, nextremes = num.ext, method = "ad"),
-      error = function(e) NULL)
+  # Using ForwardStop to select the number of extreme samples
+  gpd.test <- tryCatch(
+    eva::gpdSeqTests(samp, nextremes = num.ext, method = "ad"),
+    error = function(e) NULL)
 
-    if(is.null(gpd.test)) next
+  if(is.null(gpd.test)) return(out)
 
-    if(all(gpd.test$ForwardStop > alpha)){
-      n.selected <- num.ext[length(num.ext)]
-    }else if(any(gpd.test$ForwardStop > alpha)){
-      if(gpd.test$ForwardStop[1] <= alpha) next
-      n.selected <- num.ext[which(gpd.test$ForwardStop <= alpha)[1] - 1]
-    }else next
+  if(all(gpd.test$ForwardStop > alpha)){
+    n.selected <- num.ext[length(num.ext)] #choose largest number is num.ext
+  }else if(any(gpd.test$ForwardStop > alpha)){
+    if(gpd.test$ForwardStop[1] <= alpha) return(out) #tail is not GPD
+    n.selected <- num.ext[which(gpd.test$ForwardStop <= alpha)[1] - 1] #select largest GDP tail
+  }else return(out)
 
-    # Fitting gpd and computing (log of) p-value
-    fit <- eva::gpdFit(samp, nextremes = n.selected)
-    loc <- unname(min(fit$exceedances))
-    scale <- unname(fit$par.ests[1])
-    shape <- unname(fit$par.ests[2])
-    if(scale <= 0 | ( (score - loc) / scale )*shape <= -1 ) next
-    if(shape == 0){
-      log.p <- (score - loc) / scale
-    }else{
-      log.p <- (-1/shape) * log1p( ( (score - loc) / scale)*shape )
-    }
-    if(is.infinite(log.p) | is.na(log.p)) next
+  # Fitting gpd and computing (log of) p-value
+  fit <- eva::gpdFit(samp, nextremes = n.selected)
+  loc <- unname(min(fit$exceedances))
+  scale <- unname(fit$par.ests[1])
+  shape <- unname(fit$par.ests[2])
+  if(scale <= 0 || ( (score - loc) / scale )*shape <= -1 ) return(out)
+  if(shape == 0){
+    log.p <- (score - loc) / scale
+  }else{
+    log.p <- (-1/shape) * log1p( ( (score - loc) / scale)*shape )
+  }
+  if(is.infinite(log.p) || is.na(log.p)) return(out)
 
-    # Sampling parameters to compute quartiles of p-value
-    coef <- MASS::mvrnorm(n = n.samp.quar, mu = fit$par.ests, Sigma = fit$varcov)
-    degenerate <- (coef[,1] <= 0) | ( ( (score - loc)/coef[,1] )*coef[,2] <= -1)
-    coef <- coef[!degenerate,]
-    coef.1 <- coef[coef[,2] != 0,]
-    coef.2 <- coef[coef[,2] == 0,]
-    log.p.samples <- (-1/coef.1[,2]) * log1p( ( (score - loc) / coef.1[,1] )*coef.1[,2] )
-    log.p.samples <- append(log.p.samples, (score - loc) / coef.2[,1])
-    log.p.samples <- append(log.p.samples, rep(-Inf, sum(degenerate)))
-    q <- quantile(log.p.samples, probs = c(0.25, 0.75), names = FALSE)
-    out$log.p <- log.p
-    out$log.q1 <- q[1]
-    out$log.q3 <- q[2]
+  # Sampling parameters to compute quartiles of p-value
+  coef <- MASS::mvrnorm(n = n.samp.quar, mu = fit$par.ests, Sigma = fit$varcov)
+  degenerate <- (coef[,1] <= 0) | ( ( (score - loc)/coef[,1] )*coef[,2] <= -1)
+  coef <- coef[!degenerate,]
+  coef.1 <- coef[coef[,2] != 0,]
+  coef.2 <- coef[coef[,2] == 0,]
+  log.p.samples <- (-1/coef.1[,2]) * log1p( ( (score - loc) / coef.1[,1] )*coef.1[,2] )
+  log.p.samples <- append(log.p.samples, (score - loc) / coef.2[,1])
+  log.p.samples <- append(log.p.samples, rep(-Inf, sum(degenerate)))
+  q <- quantile(log.p.samples, probs = c(0.25, 0.75), names = FALSE)
+  out$log.p <- log.p
+  out$log.q1 <- q[1]
+  out$log.q3 <- q[2]
   return(out)
 }
 
@@ -108,6 +106,7 @@ add.samples <- function(scorer, f, n.perm, dim, n.cores = 1, cov = NULL,
     if(is.null(old.samps)){
       return(new.samps)
     }else{
+      #joining old and new samples
       for(i in 1:n.complexes){
         new.samps[[i]] <- cbind(old.samps[[i]], new.samps[[i]])
       }
@@ -136,7 +135,7 @@ add.samples <- function(scorer, f, n.perm, dim, n.cores = 1, cov = NULL,
 compute.p <- function(f, scorer, dim, min.perm, use.gpd = FALSE, cov = NULL,
                       max.perm = min.perm, n.cores = 1, pow = NA, nextremes = NULL,
                       alpha = NA){
-  if(is(f, "numeric")) f <- t(as.matrix(f))
+  if(is(f, "numeric") || (is(f, "array") && length(dim(f)) == 1)) f <- t(as.matrix(f))
   if(!is.null(cov) && is(cov, "numeric")) cov <- t(as.matrix(cov))
 
   out <- list(R = scorer$score(f, dim))
@@ -184,8 +183,9 @@ compute.p <- function(f, scorer, dim, min.perm, use.gpd = FALSE, cov = NULL,
       obs <- null.data[[i]][["observed"]]
       null.samps <- null.data[[i]][["sampled"]]
 
-      if(use.gpd) new.log.p <- rep(NA, n.funcs) #new p-values obtained by gpd
+      if(use.gpd) new.log.p <- rep(NA, n.funcs) #vector for p-values obtained by gpd
 
+      #tying to compute p-values
       for(k in 1:n.funcs){
         if(!is.na(p[idx.nc[k],i])) next
 
@@ -241,7 +241,7 @@ compute.p <- function(f, scorer, dim, min.perm, use.gpd = FALSE, cov = NULL,
         for(i in 1:n.complexes){
           combined.obs[,i] <- null.data[[i]][["sampled"]][which(conv)[k],]
         }
-        combined.p[idx.new.conv] <- combine.p.values(p[idx.new.conv, ], combined.obs)
+        combined.p[idx.new.conv[k]] <- combine.p.values(p[idx.new.conv[k], ], combined.obs)
       }
     }
 
@@ -274,7 +274,9 @@ compute.p <- function(f, scorer, dim, min.perm, use.gpd = FALSE, cov = NULL,
           p[idx.nc[k], i] <- sum(null.samps <= obs) / n.perm
           if(n.complexes > 1) combined.obs[,i] <- null.samps
         }
-        if(n.complexes > 1) combined.p[idx.nc[k]] <- combine.p.values(p[idx.nc[k],], combined.obs)
+        if(n.complexes > 1){
+          combined.p[idx.nc[k]] <- combine.p.values(p[idx.nc[k],], combined.obs)
+        }
       }
     idx.nc <- NULL
     }
@@ -284,7 +286,7 @@ compute.p <- function(f, scorer, dim, min.perm, use.gpd = FALSE, cov = NULL,
   out$n.conv <- n.conv
   out$combined.p <- combined.p
 
-  return(out)
+  return(as.data.frame(out))
 }
 
 get.null.samps <- function(f.scores, cov.scores, samps){
@@ -404,8 +406,7 @@ regresion.residues <- function(f.score, cov.scores, f.samps, cov.samps){
   #   f.samps: samples of laplacian scores of function as a vector
   #   cov.samps: samples of laplacian score of covariates as a vector or as a matrix
   #      where each row has the samples of a covariate.
-  #
-  # Return
+  # Value
   #   list with residue corresponding to obsed value and residues of samples.
 
   if(is.infinite(f.score)) return(1)
@@ -459,7 +460,7 @@ ensamble.p.values <- function(observed, samples){
   # Arguments
   #   observed: observed scores as a numeric, vector or row matrix
   #   samples: samples as a matrix, each column corresponding to an observation
-  # Return
+  # Value
   #   Combined p-value and individual p-values
 
   # remove infinite vales

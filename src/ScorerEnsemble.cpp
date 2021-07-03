@@ -32,6 +32,23 @@
 //'  \item \code{n_cores}: number of cores to be used, parallelization requires code to be compiled with \code{openmp} }
 //' \strong{Value} Dense 3-dimensional array with sampled scores where position (i,j,k) has the score of the j-th
 //'                permutation of the i-th function in the k-th complex.
+//'
+//' @field sample_with_covariate Takes samples of scores of function in tandem with scores of covariates
+//' by applying the same permutations of labels to both.
+//' \strong{Use} \code{scorer$sample_with_covariate(funcs, cov, n_perm, dim, n_cores)}
+//' \strong{Parameters}\itemize{
+//'  \item \code{funcs}: base functions as rows of a dense matrix
+//'  \item \code{cov}: covariates as rows of a dense matrix
+//'  \item \code{n_perm}: number of permutations
+//'  \item \code{dim}: dimension of the laplacian
+//'  \item \code{n_cores}: number of cores to be used, parallelization requires code to be compiled with \code{openmp} }
+//' \strong{Value} A list \code{out} with as many elements as there are complexes in the ensemble. Each element
+//'   of the list is itself a list with two elements: \itemize{
+//'   \item \code{func_scores}: a dense matrix with sampled scores where the
+//'   i-th row has samples for the i-th function.
+//'   \item \code{cov_scores}: a dense 3-dimensional array where the position (i, j, k) has the sampled score
+//'   of the j-th covariate associated to the k-th sample of the i-th function.}
+//'
 //' @examples
 //' library(RayleighSelection)
 //'
@@ -106,6 +123,65 @@ arma::cube ScorerEnsemble::sample_scores(const arma::mat& funcs, arma::uword n_p
   return scores;
 }
 
+List ScorerEnsemble::sample_with_covariate(const arma::mat& funcs,
+                                           const arma::mat& cov,
+                                           arma::uword n_perm,
+                                           int dim, int n_cores){
+  arma::uword n_funcs = funcs.n_rows;
+  arma::uword n_cov = cov.n_rows;
+
+  arma::cube func_scores (n_funcs, n_perm, n_scorers);
+  std::vector<arma::cube> cov_scores (n_funcs);
+
+  #if defined(_OPENMP)
+  #pragma omp parallel for num_threads(n_cores)
+  #endif
+  for(arma::uword i = 0; i < n_funcs; i++){
+
+    arma::rowvec f = funcs.row(i);
+
+    arma::mat f_shuffled (n_perm, funcs.n_cols); //each row is a shuffled f
+
+    arma::cube cov_shuffled(n_perm, funcs.n_cols, n_cov); //each row in the k-th slice is a
+                                                          //shuffled k-th covariate
+
+    arma::uvec seq (funcs.n_cols);//sequence 0, ... , funcs.n_cols - 1
+    for(arma::uword u = 0; u < funcs.n_cols; u++) seq(u) = u;
+
+    //shuffling functions and covariates
+    for(arma::uword j = 0; j < n_perm; j++){
+      arma::uvec seq_shuffled = arma::shuffle(seq); //shuffling indices
+      f_shuffled.row(j) = f(seq_shuffled).t();
+
+      for(arma::uword l = 0; l < funcs.n_cols; l++){
+        for(arma::uword k = 0; k < n_cov; k++){
+          cov_shuffled(j, l, k) = cov(k, seq_shuffled(l));
+        }
+      }
+    }
+    func_scores.row(i) = score(f_shuffled, dim);
+    cov_scores[i] = arma::cube (n_cov, n_perm, n_scorers);
+    for(arma::uword k = 0; k < n_cov; k++){
+      //scores for the k-th covariate
+      cov_scores[i].row(k) = score(cov_shuffled.slice(k), dim);
+    }
+  }
+
+  List out (n_scorers);
+  for(int s = 0; s < n_scorers; s++){
+    arma::mat f_scores = func_scores.slice(s);
+    arma::cube c_scores (n_funcs, n_cov, n_perm);
+    for(int i = 0; i < n_funcs; i++){
+      c_scores.row(i) = cov_scores[i].slice(s);
+    }
+    out[s] = List::create(Named("func_scores") = f_scores,
+                          Named("cov_scores") = c_scores);
+  }
+
+  return out;
+
+}
+
 RCPP_MODULE(mod_scorer_ensemble){
   class_<ScorerEnsemble>("ScorerEnsemble")
 
@@ -113,5 +189,6 @@ RCPP_MODULE(mod_scorer_ensemble){
 
   .method("score", &ScorerEnsemble::score)
   .method("sample_scores", &ScorerEnsemble::sample_scores)
+  .method("sample_with_covariate", &ScorerEnsemble::sample_with_covariate)
   ;
 }

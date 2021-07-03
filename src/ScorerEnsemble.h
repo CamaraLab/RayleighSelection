@@ -15,6 +15,9 @@ public:
   //sample scores of all complexes in tandem
   arma::cube sample_scores(const arma::mat&, arma::uword, int, int);
 
+  //sample scores of complex with covarites
+  List sample_with_covariate(const arma::mat&, const arma::mat&, arma::uword, int, int);
+
 private:
   //scorers
   std::vector<LaplacianScorer> scorers;

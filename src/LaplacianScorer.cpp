@@ -193,8 +193,8 @@ List LaplacianScorer::sample_with_covariate(const arma::mat& funcs, const arma::
 
     arma::mat f_shuffled (n_perm, funcs.n_cols); //each row is a shuffled f
 
-    arma::cube cov_shuffled(n_perm, funcs.n_cols, n_cov); //each row in the k-th slice is a
-                                                          //shuffled k-th covariate
+    arma::cube cov_shuffled (n_perm, funcs.n_cols, n_cov); //each row in the k-th slice is a
+                                                           //shuffled k-th covariate
 
     arma::uvec seq (funcs.n_cols);//sequence 0, ... , funcs.n_cols - 1
     for(arma::uword u = 0; u < funcs.n_cols; u++) seq(u) = u;

@@ -21,7 +21,8 @@ Imports:
     RANN,
     TDAmapper,
     MASS,
-    eva
+    eva,
+    abind
 Remotes: analyxcompany/ForceAtlas2, paultpearson/TDAmapper
 LinkingTo: Rcpp, RcppArmadillo
 NeedsCompilation: yes

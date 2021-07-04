@@ -14,6 +14,7 @@ rayleigh_selection(
   one_forms = FALSE,
   weights = FALSE,
   covariates = NULL,
+  combination.method = "KM",
   optimize.p = NULL,
   min_perms = 100,
   pow = 1,
@@ -51,14 +52,16 @@ By default is set to FALSE.}
 
 \item{covariates}{numeric vector or matrix specifying covariate functions to be samples in
 tandem with the functions in f. Each column correspond to a point and each row specifies a
-different covariate function. Is ignored when set to \code{NULL} and when \code{g2} is a
-list. Default value is \code{NULL}.}
+different covariate function. Is ignored when set to \code{NULL}. Default value is \code{NULL}.}
+
+\item{combination.method}{method used to combine p-values, can be "KM" for the Kost-McDermott method
+or "EBM" for the empirical Brown's method (Gibbs et. al. 16). Default value is "KM". Only has an
+effect if g2 is a list.}
 
 \item{optimize.p}{string indicating the type of optimization used for computing p-values.
 Must have value \code{NULL} for no optimization, \code{"perm"} for optimizing the calculation of
 p-values using only permutations, or \code{"gpd"} for using a permutations and GPD in optimizing p-value calculation.
-By default is set to \code{NULL}. Only implemented for when \code{covatiate} is \code{NULL} and \text{g2} is a
-single simplicial complex.}
+By default is set to \code{NULL}.}
 
 \item{min_perms}{minimum number of permutations to be used when computing p-values, only
 relevant when \code{optimize.p} is set to \code{"perm"} or \code{"gpd"}. By default is set to 100.}

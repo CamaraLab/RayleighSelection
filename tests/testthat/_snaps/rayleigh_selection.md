@@ -1,16 +1,35 @@
-# rayleigh_selection works with permutation optimization
+# rayleigh_selection works with an ensamble, covarites and gpd optimization
 
-    WAoAAAACAAQBAAACAwAAAAMTAAAAAgAAAA4AAAADP+WlWrJfD3w/4rzjswRjLz/gMA8wznN3
-    AAAADgAAAAM/+s3bOu60NT/558i7AwfiP/ebC5GMGykAAAQCAAAAAQAEAAkAAAAFbmFtZXMA
-    AAAQAAAAAgAEAAkAAAACUjAABAAJAAAAAlIxAAAEAgAAAAEABAAJAAAABWNsYXNzAAAAEAAA
-    AAEABAAJAAAACmRhdGEuZnJhbWUAAAQCAAAAAQAEAAkAAAAJcm93Lm5hbWVzAAAADQAAAAKA
-    AAAA/////QAAAP4=
-
-# rayleigh_selection works with GPD optimization
-
-    WAoAAAACAAQBAAACAwAAAAMTAAAAAgAAAA4AAAADP+WlWrJfD3w/4rzjswRjLz/gMA8wznN3
-    AAAADgAAAAM/+s3bOu60NT/558i7AwfiP/ebC5GMGykAAAQCAAAAAQAEAAkAAAAFbmFtZXMA
-    AAAQAAAAAgAEAAkAAAACUjAABAAJAAAAAlIxAAAEAgAAAAEABAAJAAAABWNsYXNzAAAAEAAA
-    AAEABAAJAAAACmRhdGEuZnJhbWUAAAQCAAAAAQAEAAkAAAAJcm93Lm5hbWVzAAAADQAAAAKA
-    AAAA/////QAAAP4=
+    {
+      "type": "list",
+      "attributes": {
+        "names": {
+          "type": "character",
+          "attributes": {},
+          "value": ["R0.1", "R0.2"]
+        },
+        "row.names": {
+          "type": "character",
+          "attributes": {},
+          "value": ["X201", "X202", "X203"]
+        },
+        "class": {
+          "type": "character",
+          "attributes": {},
+          "value": ["data.frame"]
+        }
+      },
+      "value": [
+        {
+          "type": "double",
+          "attributes": {},
+          "value": [0.676435, 0.585558, 0.505867]
+        },
+        {
+          "type": "double",
+          "attributes": {},
+          "value": [0.676435, 0.585558, 0.505867]
+        }
+      ]
+    }
 

@@ -132,9 +132,150 @@ add.samples <- function(scorer, f, n.perm, dim, n.cores = 1, cov = NULL,
   }
 }
 
+get.null.samps <- function(f.scores, cov.scores, samps){
+  # Get samples from the null distribution and observed value
+  # Arguments
+  #   f.scores: observed scores of function
+  #   cov.scores: observed scores of covariates (or NULL)
+  #   samps: samples as returned by add.samples
+  # Value
+  #   List with two entries:
+  #      observed: observed values as a numeric vector (f.scores if cov.scores = NULL,
+  #                 residue of linear model relative to observed values else)
+  #      sampled: samples from the null distribution as a matrix, each row relative
+  #               to a function (scores of shuffled functions if cov.scores = NULL,
+  #               residues of linear model else)
+  f.scores <- as.numeric(f.scores)
+  if(is.null(cov.scores)){
+    return(list(observed = f.scores, sampled = samps))
+  }else{
+    observed <- rep(NA, length(f.scores))
+    sampled <- matrix(nrow = length(f.scores), ncol = ncol(samps[["func_scores"]]))
+    for(i in seq_along(f.scores)){
+      rr <- regresion.residues(f.scores[i], cov.scores, samps[["func_scores"]][i,],
+                               samps[["cov_scores"]][i, ,])
+      observed[i] <- rr[["observed"]]
+      sampled[i,] <- rr[["sampled"]]
+    }
+    return(list(observed = observed, sampled = sampled))
+  }
+}
+
+
+regresion.residues <- function(f.score, cov.scores, f.samps, cov.samps){
+  # Accesses the significance of score taking covariates into consideration
+  # Arguments
+  #   f.score: observed laplacian score of function (double)
+  #   cov.scores: observed laplacian score of covariates
+  #   f.samps: samples of laplacian scores of function as a vector
+  #   cov.samps: samples of laplacian score of covariates as a vector or as a matrix
+  #      where each row has the samples of a covariate.
+  # Value
+  #   list with residue corresponding to obsed value and residues of samples.
+
+  if(is.infinite(f.score)) return(1)
+
+  if(is(cov.samps, "numeric")) cov.samps <- t(as.matrix(cov.samps))
+  if(is(cov.scores, "numeric")
+     || (is(cov.scores, "array") && length(dim(cov.scores)) == 1)){
+    cov.scores <- as.matrix(cov.scores)
+  }
+
+  cov.samps <- cov.samps[is.finite(cov.scores), , drop = F]
+  cov.scores <- cov.scores[is.finite(cov.scores), ,drop = F]
+  if(nrow(cov.samps) == 0) return(list(observed = f.score, sampled = f.samps))
+
+  samples <- data.frame(
+    fs = f.samps,
+    cs = t(cov.samps)
+  )
+  observed <- data.frame(
+    fs = f.score,
+    cs = t(cov.scores)
+  )
+
+  #marking rows with infinite values
+  finite.rows <- apply(samples, 1, function(x) all(is.finite(x)))
+
+  if(all(!finite.rows)){
+    warning("There are no samples after eleminating infite values")
+    return(list(observed = f.score, sampled = f.samps))
+  }
+  if(any(!finite.rows)){
+    warning("There are Inf values in the samples")
+  }
+
+  #test if any of the covariates equals the function
+  func.is.cov <- apply(
+    samples[finite.rows, 2:ncol(samples), drop = F], 2,
+    function(x) all(abs(x - samples[finite.rows,1]) <= 1e-9*(abs(x) + abs(samples[finite.rows,1]))/2)
+  )
+  if(any(func.is.cov)) return(list(observed = Inf, sampled = f.samps))
+
+  linear.model <- lm(fs ~ . , data = samples[finite.rows, , drop = F])
+  obs.residual <- f.score - predict(linear.model, observed)
+  sampled.residuals <- f.samps - predict(linear.model, samples)
+  sampled.residuals[is.na(sampled.residuals)] <- -Inf #Na's will be considered as -Inf
+  return(list(observed = unname(obs.residual), sampled = unname(sampled.residuals)))
+}
+
+combine.p.values <- function(p.vals, samples, method = "KM"){
+  # Combines p-values associated to samples using Brown's method
+  # Arguments
+  #   p.vals: p-values as a numeric
+  #   samples: samples as a matrix, each column corresponding to a complex and each row
+  #            to a joint sample
+  #   method: Method used to combine p-values, can be "KM" for the Kost-McDermott method
+  #         or "EBM" for the empirical Brown's method (Gibbs et. al. 16)
+  # Value
+  #    combined p-value (double)
+
+  if(any(p.vals == 0)) return(0)
+
+  samples <- samples[ apply(is.finite(samples), 1, all),  ]
+  if(nrow(samples) == 0) return(1)
+
+  if(method == "EBM"){
+    w <- apply(
+      samples, 2,
+      function(x) -2*log(ecdf(x)(x))
+    )
+    cov.log.p <- cov(w)
+  }
+  if(method == "KM"){
+    rho <- cor(samples)
+    cov.log.p <- 3.263*rho + 0.71*rho^2 + 0.027*rho^3
+  }
+  expectation <- 2*length(p.vals)
+  variance <- 2*expectation + 2*sum(cov.log.p[lower.tri(cov.log.p)])
+  f.val <- (expectation^2) / variance
+  c.val <- variance / (2*expectation)
+  p.combined <- pchisq(-2*sum(log(p.vals)) / c.val, df = 2*f.val, lower.tail = F)
+  return(p.combined)
+}
+
+
 compute.p <- function(f, scorer, dim, min.perm, use.gpd = FALSE, cov = NULL,
-                      max.perm = min.perm, n.cores = 1, pow = NA, nextremes = NULL,
-                      alpha = NA){
+                      max.perm = min.perm, n.cores = 1, combination.method = "KM",
+                      pow = NA, nextremes = NULL, alpha = NA){
+  # Compute scores and p-values
+  # Arguments
+  #   f: functions is a numeric vector, 1d array or rows of a matrix
+  #   scorer: LaplacianScorer or ScorerEnsemble object
+  #   dim: dimension of forms (0 or 1)
+  #   min.perm: minimum number of permutations to be performed by function
+  #   use.gpd: boolean determining if GPD approximation will be used
+  #   cov: covariates as a numeric vector or as rows of a matrix
+  #   max.perm: maximum number of permutation to be performed by function
+  #   n.cores: number of cores used in sampling
+  #   combination.method: method used to combine p-values when scorer is a
+  #                       ScorerEnsemble, must be "KM" or "EBM"
+  #   other arguments: parameters for GPD approximation
+  #
+  # Value
+  #   Data frame with scores, p-values and when p-values converged and combined
+  #   p-values, in this order
+
   if(is(f, "numeric") || (is(f, "array") && length(dim(f)) == 1)) f <- t(as.matrix(f))
   if(!is.null(cov) && is(cov, "numeric")) cov <- t(as.matrix(cov))
 
@@ -236,12 +377,14 @@ compute.p <- function(f, scorer, dim, min.perm, use.gpd = FALSE, cov = NULL,
 
     # combining convergent p-values
     if(n.complexes > 1 && sum(conv) > 0){
-      for(k in 1:sum(conv)){
+      for(k in 1:seq_along(idx.new.conv)){
         combined.obs <- matrix(nrow = n.perm, ncol = n.complexes)
         for(i in 1:n.complexes){
           combined.obs[,i] <- null.data[[i]][["sampled"]][which(conv)[k],]
         }
-        combined.p[idx.new.conv[k]] <- combine.p.values(p[idx.new.conv[k], ], combined.obs)
+        combined.p[idx.new.conv[k]] <- combine.p.values(p[idx.new.conv[k], ],
+                                                        combined.obs,
+                                                        method = combination.method)
       }
     }
 
@@ -269,13 +412,15 @@ compute.p <- function(f, scorer, dim, min.perm, use.gpd = FALSE, cov = NULL,
       for(k in 1:n.funcs){
         if(n.complexes > 1) combined.obs <- matrix(nrow = n.perm, ncol = n.complexes)
         for(i in 1:n.complexes){
-          obs <- null.data[[i]][["observed"]][!conv][k]
-          null.samps <- null.data[[i]][["sampled"]][!conv, , drop = F][k,]
+          obs <- null.data[[i]][["observed"]][which(!conv)[k]]
+          null.samps <- null.data[[i]][["sampled"]][which(!conv)[k],]
           p[idx.nc[k], i] <- sum(null.samps <= obs) / n.perm
           if(n.complexes > 1) combined.obs[,i] <- null.samps
         }
         if(n.complexes > 1){
-          combined.p[idx.nc[k]] <- combine.p.values(p[idx.nc[k],], combined.obs)
+          combined.p[idx.nc[k]] <- combine.p.values(p[idx.nc[k],],
+                                                    combined.obs,
+                                                    method = combination.method)
         }
       }
     idx.nc <- NULL
@@ -288,219 +433,3 @@ compute.p <- function(f, scorer, dim, min.perm, use.gpd = FALSE, cov = NULL,
 
   return(as.data.frame(out))
 }
-
-get.null.samps <- function(f.scores, cov.scores, samps){
-  # Get samples from the null distribution and observed value
-  # Arguments
-  #   f.scores: observed scores of function
-  #   cov.scores: observed scores of covariates (or NULL)
-  #   samps: samples as returned by add.samples
-  # Value
-  #   List with two entries:
-  #      observed: observed values as a numeric vector (f.scores if cov.scores = NULL,
-  #                 residue of linear model relative to observed values else)
-  #      sampled: samples from the null distribution as a matrix, each row relative
-  #               to a function (scores of shuffled functions if cov.scores = NULL,
-  #               residues of linear model else)
-  f.scores <- as.numeric(f.scores)
-  if(is.null(cov.scores)){
-    return(list(observed = f.scores, sampled = samps))
-  }else{
-    observed <- rep(NA, length(f.scores))
-    sampled <- matrix(nrow = length(f.scores), ncol = ncol(samps[["func_scores"]]))
-    for(i in seq_along(f.scores)){
-      rr <- regresion.residues(f.scores[i], cov.scores, samps[["func_scores"]][i,],
-                               samps[["cov_scores"]][i, ,])
-      observed[i] <- rr[["observed"]]
-      sampled[i,] <- rr[["sampled"]]
-    }
-    return(list(observed = observed, sampled = sampled))
-  }
-}
-
-
-
-
-optim.p <- function(observed, func, scorer, dim, use.gpd, min_perms, max_perms, n.cores = 1,
-                    pow = 1, nextremes = c(seq(50, 250, 25), seq(300, 500, 50), seq(600, 1000, 100)),
-                    alpha = 0.15){
-  # Optimizes the calculation of p-values by permutation
-  #
-  # Arguments
-  #  observed: Observed values
-  #  func: Functions considered as rows of a matrix
-  #  scorer: LaplacianScorer object
-  #  dim: Dimension of forms (0 or 1)
-  #  use.gpd: Boolean indicating if a generalized pareto is to be used
-  #  n.cores: Number of cores to be used in sampling
-  #  Other args: Parameters for gpd.approx
-  #
-  # Return
-  #  data frame with p-values and number of samples where convergence was achieved
-
-  n_funcs <- nrow(func)
-  idx <- 1:n_funcs # keeps track of the index of non-convergent functions
-  p <- rep(NA, n_funcs)
-  n.conv <- rep(NA, n_funcs)
-
-  # if the score is positive infinity the p-value is one
-  p[is.infinite(observed) & observed > 0] <- 1
-  n.conv[is.infinite(observed) & observed > 0] <- 0
-  idx<- idx[!(is.infinite(observed) & observed > 0)]
-
-  n_samps <- min_perms
-  samp <- scorer$sample_scores(func[idx, ,drop = F], n_samps, dim, n.cores)
-  # setting up matrix to keep track of gpd p-values
-  if(use.gpd) log.p.gpd <- matrix(rep(NA, 3*length(idx)), nrow = length(idx))
-  while(TRUE){
-    # if there are enough (at least 10) small the p-value converges
-    num.le <- apply(samp <= observed[idx], 1, sum)
-    conv <- num.le >= 10
-    p[idx[conv]] <- num.le[conv]/n_samps
-    n.conv[idx[conv]] <- n_samps
-    idx <- idx[!conv]
-    samp <- samp[!conv, , drop = F]
-
-    if(use.gpd & any(!conv)){
-      # try gpd approximation
-      log.p.gpd <- log.p.gpd[!conv, , drop = F]
-
-      gpd.out <- gpd.approx(samp, observed[idx], pow = pow, nextremes = nextremes, alpha = alpha)
-
-      #condition 0: all values are finite
-      cond0 <- apply(log.p.gpd, 1, function(x) all(is.finite(x))) &
-        is.finite(gpd.out$log.q1) & is.finite(gpd.out$log.q3) &  is.finite(gpd.out$log.p)
-      #condition 1: relative variation of log p values is small
-      cond1 <- apply(abs(log.p.gpd/ gpd.out$log.p - 1) < 0.1, 1, all)
-      #condition 3: quartiles are close to predicted values
-      cond2 <- gpd.out$log.q1/gpd.out$log.p < 1.1 & gpd.out$log.q3/gpd.out$log.p > 0.9
-
-      conv <- cond0 & cond1 & cond2
-      conv[is.na(conv)] <- FALSE
-      p[idx[conv]] <- exp(gpd.out$log.p[conv])
-      n.conv[idx[conv]] <- n_samps
-      idx <- idx[!conv]
-      samp <- samp[!conv, , drop = F]
-      log.p.gpd <- cbind(log.p.gpd[!conv, , drop = F], gpd.out$log.p[!conv])
-      if(2*n_samps <= max_perms) log.p.gpd <- log.p.gpd[, 2:ncol(log.p.gpd), drop = F]
-    }
-    if(n_samps < max_perms){
-      # get new samples
-      num.new.samps = min(n_samps, max_perms - n_samps)
-      samp <- cbind(samp, scorer$sample_scores(func[idx, , drop = F], num.new.samps, dim, n.cores))
-      n_samps <- n_samps + num.new.samps
-    }else{
-      break
-    }
-  }
-  p[idx] <- num.le[!conv]/n_samps
-  return(data.frame(p = p, n.conv = n.conv))
-}
-
-
-regresion.residues <- function(f.score, cov.scores, f.samps, cov.samps){
-  # Accesses the significance of score taking covariates into consideration
-  # Arguments
-  #   f.score: observed laplacian score of function (double)
-  #   cov.scores: observed laplacian score of covariates
-  #   f.samps: samples of laplacian scores of function as a vector
-  #   cov.samps: samples of laplacian score of covariates as a vector or as a matrix
-  #      where each row has the samples of a covariate.
-  # Value
-  #   list with residue corresponding to obsed value and residues of samples.
-
-  if(is.infinite(f.score)) return(1)
-
-  if(is(cov.samps, "numeric")) cov.samps <- t(as.matrix(cov.samps))
-  if(is(cov.scores, "numeric")
-     || (is(cov.scores, "array") && length(dim(cov.scores)) == 1)){
-    cov.scores <- as.matrix(cov.scores)
-  }
-
-  cov.samps <- cov.samps[is.finite(cov.scores), , drop = F]
-  cov.scores <- cov.scores[is.finite(cov.scores), ,drop = F]
-  if(nrow(cov.samps) == 0) return(list(observed = f.score, sampled = f.samps))
-
-  samples <- data.frame(
-    fs = f.samps,
-    cs = t(cov.samps)
-  )
-  observed <- data.frame(
-    fs = f.score,
-    cs = t(cov.scores)
-  )
-
-  #marking rows with infinite values
-  finite.rows <- apply(samples, 1, function(x) all(is.finite(x)))
-
-  if(all(!finite.rows)){
-    warning("There are no samples after eleminating infite values")
-    return(list(observed = f.score, sampled = f.samps))
-  }
-  if(any(!finite.rows)){
-    warning("There are Inf values in the samples")
-  }
-
-  #test if any of the covariates equals the function
-  func.is.cov <- apply(
-    samples[finite.rows, 2:ncol(samples), drop = F], 2,
-    function(x) all(abs(x - samples[finite.rows,1]) <= 1e-9*(abs(x) + abs(samples[finite.rows,1]))/2)
-  )
-  if(any(func.is.cov)) return(list(observed = Inf, sampled = f.samps))
-
-  linear.model <- lm(fs ~ . , data = samples[finite.rows, , drop = F])
-  obs.residual <- f.score - predict(linear.model, observed)
-  sampled.residuals <- f.samps - predict(linear.model, samples)
-  sampled.residuals[is.na(sampled.residuals)] <- -Inf #Na's will be considered as -Inf
-  return(list(observed = unname(obs.residual), sampled = unname(sampled.residuals)))
-}
-
-ensamble.p.values <- function(observed, samples){
-  # Computes the combined p-value of the observations given the samples
-  # Arguments
-  #   observed: observed scores as a numeric, vector or row matrix
-  #   samples: samples as a matrix, each column corresponding to an observation
-  # Value
-  #   Combined p-value and individual p-values
-
-  # remove infinite vales
-  samples <- samples[ apply(is.finite(samples), 1, all),  ]
-  if(nrow(samples) == 0) return(1)
-
-  p.vals <- apply(t(samples) <= as.numeric(observed), 1, sum)/nrow(samples)
-  return(
-    list("combined.p" = combine.p.values(p.vals, samples), "individual.p" = p.vals)
-  )
-}
-
-combine.p.values <- function(p.vals, samples, method = "KM"){
-  # Combines p-values associated to samples using Brown's method
-  # Arguments
-  #   p.vals: p-values as a numeric
-  #   samples: samples as a matrix, each column corresponding to a complex and each row
-  #            to a joint sample
-  #   method: Method used to combine p-valies, can be "KM" for the Kost-McDermott method
-  #         or "EBM" for the empirical Brown's method (Gibbs et. al. 16)
-  # Value
-  #    combined p-value (double)
-  if(any(p.vals == 0)) return(0)
-  if(method == "EBM"){
-    w <- apply(
-      samples, 2,
-      function(x) -2*log(ecdf(x)(x))
-    )
-    cov.log.p <- cov(w)
-  }
-  if(method == "KM"){
-    rho <- cor(samples)
-    cov.log.p <- 3.263*rho + 0.71*rho^2 + 0.027*rho^3
-  }
-  expectation <- 2*length(p.vals)
-  variance <- 2*expectation + 2*sum(cov.log.p[lower.tri(cov.log.p)])
-  f.val <- (expectation^2) / variance
-  c.val <- variance / (2*expectation)
-  p.combined <- pchisq(-2*sum(log(p.vals)) / c.val, df = 2*f.val, lower.tail = F)
-  return(p.combined)
-}
-
-

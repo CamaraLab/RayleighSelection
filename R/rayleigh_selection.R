@@ -40,13 +40,14 @@
 #' By default is set to FALSE.
 #' @param covariates numeric vector or matrix specifying covariate functions to be samples in
 #' tandem with the functions in f. Each column correspond to a point and each row specifies a
-#' different covariate function. Is ignored when set to \code{NULL} and when \code{g2} is a
-#' list. Default value is \code{NULL}.
+#' different covariate function. Is ignored when set to \code{NULL}. Default value is \code{NULL}.
+#' @param combination.method method used to combine p-values, can be "KM" for the Kost-McDermott method
+#' or "EBM" for the empirical Brown's method (Gibbs et. al. 16). Default value is "KM". Only has an
+#' effect if g2 is a list.
 #' @param optimize.p string indicating the type of optimization used for computing p-values.
 #' Must have value \code{NULL} for no optimization, \code{"perm"} for optimizing the calculation of
 #' p-values using only permutations, or \code{"gpd"} for using a permutations and GPD in optimizing p-value calculation.
-#' By default is set to \code{NULL}. Only implemented for when \code{covatiate} is \code{NULL} and \text{g2} is a
-#' single simplicial complex.
+#' By default is set to \code{NULL}.
 #' @param min_perms minimum number of permutations to be used when computing p-values, only
 #' relevant when \code{optimize.p} is set to \code{"perm"} or \code{"gpd"}. By default is set to 100.
 #' @param pow positive number indicating the power to which the samples of the null distribution and the associated
@@ -122,7 +123,8 @@
 
 rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1,
                                mc.preschedule = TRUE, one_forms = FALSE, weights = FALSE,
-                               covariates = NULL, optimize.p = NULL, min_perms = 100, pow = 1,
+                               covariates = NULL, combination.method = "KM",
+                               optimize.p = NULL, min_perms = 100, pow = 1,
                                nextremes = c(seq(50, 250, 25), seq(300, 500, 50), seq(600, 1000, 100)),
                                alpha = 0.15){
   # Check class of f
@@ -149,7 +151,9 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
       "optimize.p must be either NULL, 'perm' or 'gpd'. Proceding with no p-value optimization."
       )
   }
+
   if(!is(g2, "list")){
+    # case where g2 is a single complex
     if(max(unlist(g2$points_in_vertex)) != ncol(f)){
       stop(sprintf("The simplicial complex has %d points and f is defined on %d points.",
                     max(unlist(g2$points_in_vertex)), ncol(f)))
@@ -161,7 +165,9 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
     lout <- combinatorial_laplacian(g2, one_forms, weights)
     scorer <- new(LaplacianScorer,lout, g2$points_in_vertex, g2$adjacency, one_forms)
   }
+
   if(is(g2, "list")){
+    # case where g2 is a list of complexes
     points_in_vertex.list <- lapply(g2, function(x) x$points_in_vertex)
     adjacency.list <- lapply(g2, function(x) x$adjacency)
     lout.list <- lapply(g2, combinatorial_laplacian, one_forms = one_forms, weights = weights)
@@ -170,141 +176,79 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
     if(any(has.wrong.size)){
       stop("Some simplicial complex has a different number of points to the number of rows of f")
     }
-    scorer.ensemble <- new(ScorerEnsemble, lout.list, points_in_vertex.list, adjacency.list, one_forms)
+    scorer <- new(ScorerEnsemble, lout.list, points_in_vertex.list, adjacency.list, one_forms)
   }
 
   dims <- if(one_forms) c(0,1) else 0 # dimension to be considered
 
   out <- list()
-  use.gpd <- !is.na(optimize.p) && optimize.p == "gpd"
+  use.gpd <- !is.null(optimize.p) && optimize.p == "gpd"
   use.mclapply  <- (Sys.info()['sysname'] != "Windows") && nrow(f) > 1 && num_cores > 1
+  if(is.null(optimize.p)) min_perms <- num_perms
+  out <- NULL
 
   set.seed(seed)
 
   for(d in dims){
-    # Names of columns
-    Rd <- sprintf("R%d", d)
-    nd <- sprintf("n%d.conv", d)
-    pd <- sprintf("p%d", d)
-    qd<-sprintf("q%d", d)
-
-    if(is(g2, "list")){
-      individual.pd<-sprintf("individual.p%d", d)
-      R <- scorer.ensemble$score(f, d) # computing scores
-      out[[Rd]] <- R
-      if(use.mclapply){
-        worker <- function(score, func){
-          func <- t(as.matrix(func))
-          samples <- scorer.ensemble$sample_scores(func, num_perms, d, 1)
-          return(ensamble.p.values(score, samples[1,,]))
-        }
-        all.p <- parallel::mcmapply(worker, asplit(R, 1), asplit(func, 1),
-                                        mc.cores = num_cores, mc.preschedule = mc.preschedule)
-      }else{
-        samples <- scorer.ensemble$sample_scores(f, num_perms, d, num_cores)
-        all.p <- mapply(ensamble.p.values, asplit(R, 1), asplit(samples, 1), SIMPLIFY = F)
-      }
-      out[[individual.pd]] <- matrix(
-        unlist(lapply(all.p, function(x) x$individual.p)),
-        nrow = nrow(f), byrow = T
+    if(use.mclapply){
+      compute.out <- parallel::mclapply(
+        asplit(f, 1),
+        compute.p,
+        scorer = scorer,
+        dim = d,
+        min.perm = min_perms,
+        use.gpd = use.gpd,
+        cov = covariates,
+        max.perm = num_perms,
+        n.cores = 1,
+        combination.method = combination.method,
+        pow = pow,
+        nextremes = nextremes,
+        alpha = alpha,
+        mc.preschedule = mc.preschedule,
+        mc.cores = num_cores
       )
-      out[[pd]] <- unlist(lapply(all.p, function(x) x$combined.p))
-
-      # Adjusting p-values with the Benjamini-Hochberg procedure
-      out[[qd]] <- p.adjust(out[[pd]], method = 'BH')
-      next
+      compute.df <- do.call(rbind, compute.out)
+    } else {
+      compute.df <- compute.p(
+        f,
+        scorer = scorer,
+        dim = d,
+        min.perm = min_perms,
+        use.gpd = use.gpd,
+        cov = covariates,
+        max.perm = num_perms,
+        n.cores = num_cores,
+        combination.method = combination.method,
+        pow = pow,
+        nextremes = nextremes,
+        alpha = alpha
+      )
     }
 
-    R <- as.numeric(scorer$score(f, d)) # computing scores
-    out[[Rd]] <- R
-    if(!is.null(covariates)){
-      # Considering covariates for accessing significance
-      cov_obs <- scorer$score(covariates, d)
-      finite.cov <- is.finite(cov_obs)
-      if(all(!finite.cov)){
-        stop(
-          sprintf(
-            "All covaritares are constant on %d-simplices. Try to set covariates = NULL instead.", d
-          )
-        )
+    # Renaming columns and dropping unnecessary columns
+    if(is(g2, "list")){
+      for(i in seq_along(g2)){
+        names(compute.df)[i] <- sprintf("R%d.%d", d, i)
+        names(compute.df)[i + length(g2)] <- sprintf("p%d.%d", d, i)
       }
-      if(!all(finite.cov)){
-        warning(
-          sprintf("Some covariate is constant on %d-simplices and will be ignored.", d)
-        )
-      }
-      cov_obs <- cov_obs[finite.cov, , drop = F]
-
-      if(use.mclapply){
-        worker <- function(score, func){
-          func <- t(as.matrix(func))
-          samples <- scorer$sample_with_covariate(func, covariates[finite.cov, , drop = F],
-                                                  num_perms, d, 1)
-          p <- regresion.p.val(score, cov_obs, samples$func_scores[1,], samples$cov_scores[1,,])
-          return(p)
-        }
-        p.vals <- parallel::mcmapply(worker, R, asplit(f, 1),
-                                     mc.cores = num_cores, mc.preschedule = mc.preschedule)
-      }else{
-        # Sampling values and splitting
-        samples <- scorer$sample_with_covariate(f, covariates[finite.cov, , drop = F],
-                                                num_perms, d, num_cores)
-        func_samples <- asplit(samples$func_scores, 1)
-        cov_samples <- asplit(samples$cov_scores, 1)
-        p.vals <- mapply(regresion.p.val,
-                         R, replicate(nrow(f), cov_obs, simplify = F),
-                         func_samples, cov_samples)
-      }
-      out[[pd]] <- p.vals
-      # Adjusting p-values with the Benjamini-Hochberg procedure
-      out[[qd]] <- p.adjust(out[[pd]], method = 'BH')
-      next
+      names(compute.df)[2*length(g2)+2] <- sprintf("combined.p%d", d)
+      compute.df[[sprintf("q%d", d)]] <- p.adjust(compute.df[ ,2*length(g2)+2], method = "BH")
+    } else {
+      names(compute.df)[1] <- sprintf("R%d", d)
+      names(compute.df)[2] <- sprintf("p%d", d)
+      compute.df[[sprintf("q%d", d)]] <- p.adjust(compute.df[ ,2], method = "BH")
+      compute.df$combined.p <- NULL
     }
 
     if(is.null(optimize.p)){
-      # No optimization for p values is done
-      if(use.mclapply){
-        # Using mclapply to parallelize sampling
-        worker <- function(func) scorer$sample_scores(t(as.matrix(func)), num_perms, d, 1)
-
-
-        samp.list <- parallel::mclapply(asplit(f, 1), worker,
-                                        mc.cores =  num_cores,
-                                        mc.preschedule = mc.preschedule)
-        samp <- samp.list[[1]]
-        for(k in 2:nrow(f)) samp <- rbind(samp, samp.list[[k]])
-      }else{
-        # Paralellization (if any) is done in C++ code with OMP
-        samp <- scorer$sample_scores(f, num_perms, d, num_cores)
-      }
-      out[[pd]] <- apply(samp <= R, 1, sum) / num_perms # computing p-values
-    }else{
-      # Optimization for p-values is done
-      if(use.mclapply){
-        # Using mcmapply to parallelize p-value approximation
-        work <- function(score, func) optim.p(
-          score, t(as.matrix(func)), scorer, d, use.gpd, min_perms = min_perms,
-          max_perms = num_perms, n.cores = 1, pow = pow, nextremes =  nextremes,
-          alpha = alpha)
-
-        p.vals <- parallel::mcmapply(work, R, asplit(f, 1),
-                                     mc.cores = num_cores,
-                                     mc.preschedule = mc.preschedule)
-
-        out[[pd]] <- as.numeric(p.vals["p",])
-        out[[nd]] <- as.numeric(p.vals["n.conv",])
-      }else{
-        # Paralellization (if any) is done in C++ with OMP
-        p.vals <- optim.p(R, f, scorer, d, use.gpd, min_perms = min_perms,
-                          max_perms = num_perms, n.cores = num_cores, pow = pow,
-                          nextremes =  nextremes, alpha = alpha)
-        out[[pd]] <- p.vals$p
-        out[[nd]] <- p.vals$n.conv
-      }
+      compute.df$n.conv <- NULL
+    } else {
+      names(compute.df)[names(compute.df) == "n.conv"] <- sprintf("n%d.conv", d)
     }
-    # Adjusting p-values with the Benjamini-Hochberg procedure
-    out[[qd]] <- p.adjust(out[[pd]], method = 'BH')
+    if(is.null(out)) out <- compute.df
+    else out <- cbind(out, compute.df)
   }
-  if(!is(g2, "list")) return(as.data.frame(out))
-  if(is(g2, "list")) return(out)
+  rownames(out) <- rownames(f)
+  return(out)
 }

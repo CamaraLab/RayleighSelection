@@ -57,20 +57,28 @@
 #' @export
 #'
 plot_skeleton <- function(g2, k, r, g, b, pushforward = mean, seed = 10, iterations = 1500, file="") {
+
+  push.to.vertices <- function(vals){
+    #helper function to push values to vertices
+    if(missing(vals) || sum(abs(vals)) == 0) return(0)
+    pushed <- as.numeric(lapply(g2$points_in_vertex , function(idx) pushforward(vals[idx])))
+    return(log2(1.0 + ((pushed-min(pushed))/(max(pushed)-min(pushed)))))
+  }
+
   set.seed(seed)
   if (!missing(k)) {
-    k1 <- push(k, g2, pushforward)
+    k1 <- push.to.vertices(k)
     V(g2)$color = rainbow(256, end=0.7)[256-round(k1*255)]
   } else {
-    k1 <- push(r, g2, pushforward)
-    k2 <- push(g, g2, pushforward)
-    k3 <- push(b, g2, pushforward)
+    k1 <- push.to.vertices(r)
+    k2 <- push.to.vertices(g)
+    k3 <- push.to.vertices(b)
     V(g2)$color = rgb(1-(k2+k3)/2,1-(k1+k3)/2,1-(k1+k2)/2)
   }
 
   p = layout.forceatlas2(as.undirected(g2), directed=TRUE, iterations=iterations, plotstep=0)
   plot(norm_coords(p),cex=0.1,xaxt='n', yaxt='n', ann=FALSE, bty='n')
-  idxs <- which(lapply(g2$two_simplices, any) == TRUE, arr.ind=T)
+  idxs <- which(lapply(g2$two_simplices, function(x) sum(abs(x))) > 0, arr.ind=T)
   for (m in idxs) {
     qwy <- which(g2$two_simplices[[m]]!=0,arr.ind = T)
     for (k in 1:nrow(qwy)) {

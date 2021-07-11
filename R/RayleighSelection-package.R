@@ -1,3 +1,8 @@
+# Needed to load C++ module
+Rcpp::loadModule("mod_laplacian", TRUE)
+Rcpp::loadModule("mod_scorer_ensemble", TRUE)
+
+
 #' @useDynLib RayleighSelection
 #' @importFrom Rcpp evalCpp
 #' @exportPattern "^[[:alpha:]]+"
@@ -13,19 +18,10 @@
 #' @import RSpectra
 #' @import RANN
 #' @import TDAmapper
+#' @import abind
+#' @import eva
 
-# This is a wrapper of the function pushCpp() only used for internal purposes.
-push <- function(lo, g2, pushforward) {
-  if (!missing(lo)) {
-    lo[is.na(lo)] <- 0
-    if (sum(abs(lo))!=0) {
-      r1 <- pushCpp(as.numeric(lo), g2$points_in_vertex, 0, g2$adjacency, FALSE)
-      return(log2(1.0 + ((r1$vertices-min(r1$vertices))/(max(r1$vertices)-min(r1$vertices)))))
-    } else {
-      return(0)
-    }
-  } else {
-    return(0)
-  }
-}
+
+# dummy function to force imports
+.import.dummy <- function() {return(NULL)}
 

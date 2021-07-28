@@ -377,7 +377,7 @@ compute.p <- function(f, scorer, dim, min.perm, use.gpd = FALSE, cov = NULL,
 
     # combining convergent p-values
     if(n.complexes > 1 && sum(conv) > 0){
-      for(k in 1:seq_along(idx.new.conv)){
+      for(k in seq_along(idx.new.conv)){
         combined.obs <- matrix(nrow = n.perm, ncol = n.complexes)
         for(i in 1:n.complexes){
           combined.obs[,i] <- null.data[[i]][["sampled"]][which(conv)[k],]

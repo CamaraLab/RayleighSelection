@@ -154,11 +154,11 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
 
   if(!is(g2, "list")){
     # case where g2 is a single complex
-    if(max(unlist(g2$points_in_vertex)) != ncol(f)){
+    if(max(unlist(g2$points_in_vertex)) > ncol(f)){
       stop(sprintf("The simplicial complex has %d points and f is defined on %d points.",
                     max(unlist(g2$points_in_vertex)), ncol(f)))
     }
-    if(!is.null(covariates) && max(unlist(g2$points_in_vertex)) != ncol(covariates)){
+    if(!is.null(covariates) && max(unlist(g2$points_in_vertex)) > ncol(covariates)){
       stop(sprintf("The simplicial complex has %d points and covariates is defined on %d points.",
                     max(unlist(g2$points_in_vertex)), ncol(covariates)))
     }
@@ -172,7 +172,7 @@ rayleigh_selection <- function(g2, f, num_perms = 1000, seed = 10, num_cores = 1
     adjacency.list <- lapply(g2, function(x) x$adjacency)
     lout.list <- lapply(g2, combinatorial_laplacian, one_forms = one_forms, weights = weights)
 
-    has.wrong.size <- unlist(lapply(points_in_vertex.list, function(x) max(unlist(x)) != ncol(f)))
+    has.wrong.size <- unlist(lapply(points_in_vertex.list, function(x) max(unlist(x)) > ncol(f)))
     if(any(has.wrong.size)){
       stop("Some simplicial complex has a different number of points to the number of rows of f")
     }

@@ -171,9 +171,9 @@ regresion.residues <- function(f.score, cov.scores, f.samps, cov.samps){
   #   cov.samps: samples of laplacian score of covariates as a vector or as a matrix
   #      where each row has the samples of a covariate.
   # Value
-  #   list with residue corresponding to obsed value and residues of samples.
+  #   list with residues corresponding to observed value and samples.
 
-  if(is.infinite(f.score)) return(1)
+  if(is.infinite(f.score)) return(list(observed = f.score, sampled = f.samps))
 
   if(is(cov.samps, "numeric")) cov.samps <- t(as.matrix(cov.samps))
   if(is(cov.scores, "numeric")
@@ -183,7 +183,7 @@ regresion.residues <- function(f.score, cov.scores, f.samps, cov.samps){
 
   cov.samps <- cov.samps[is.finite(cov.scores), , drop = F]
   cov.scores <- cov.scores[is.finite(cov.scores), ,drop = F]
-  if(nrow(cov.samps) == 0) return(list(observed = f.score, sampled = f.samps))
+  if((nrow(cov.samps) == 0) || (length(cov.scores) == 0)) return(list(observed = f.score, sampled = f.samps))
 
   samples <- data.frame(
     fs = f.samps,

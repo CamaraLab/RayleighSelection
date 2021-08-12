@@ -88,7 +88,7 @@ scoresR0 <- rayleigh_selection(gg, subsample_expression, num_perms = 1000, num_c
 #### With radius=28
 
 ``` r
-gg <- vr_complex(distance_matrix, 28)
+gg <- vr_complex(distance_matrix, 28, clique = TRUE)
 ```
 
 ### Show Vietoris-Rips complex
@@ -108,66 +108,6 @@ faster.
 
 ``` r
 scores <- rayleigh_selection(gg, subsample_expression, num_perms = 1000, num_cores = 8, one_forms = TRUE)
-```
-
-    ## Warning in any(x@x, ..., na.rm = na.rm): coercing argument of type 'double' to
-    ## logical
-
-    ## Warning in any(x@x, ..., na.rm = na.rm): coercing argument of type 'double' to
-    ## logical
-
-    ## Warning in any(x@x, ..., na.rm = na.rm): coercing argument of type 'double' to
-    ## logical
-
-    ## Warning in any(x@x, ..., na.rm = na.rm): coercing argument of type 'double' to
-    ## logical
-
-    ## Warning in any(x@x, ..., na.rm = na.rm): coercing argument of type 'double' to
-    ## logical
-
-    ## Warning in any(x@x, ..., na.rm = na.rm): coercing argument of type 'double' to
-    ## logical
-
-    ## Warning in any(x@x, ..., na.rm = na.rm): coercing argument of type 'double' to
-    ## logical
-
-    ## Warning in any(x@x, ..., na.rm = na.rm): coercing argument of type 'double' to
-    ## logical
-
-    ## Warning in any(x@x, ..., na.rm = na.rm): coercing argument of type 'double' to
-    ## logical
-
-    ## Warning in any(x@x, ..., na.rm = na.rm): coercing argument of type 'double' to
-    ## logical
-
-    ## Warning in any(x@x, ..., na.rm = na.rm): coercing argument of type 'double' to
-    ## logical
-
-    ## Warning in any(x@x, ..., na.rm = na.rm): coercing argument of type 'double' to
-    ## logical
-
-    ## Warning in any(x@x, ..., na.rm = na.rm): coercing argument of type 'double' to
-    ## logical
-
-    ## Warning in any(x@x, ..., na.rm = na.rm): coercing argument of type 'double' to
-    ## logical
-
-    ## Warning in any(x@x, ..., na.rm = na.rm): coercing argument of type 'double' to
-    ## logical
-
-    ## Warning in any(x@x, ..., na.rm = na.rm): coercing argument of type 'double' to
-    ## logical
-
-    ## Warning in any(x@x, ..., na.rm = na.rm): coercing argument of type 'double' to
-    ## logical
-
-    ## Warning in any(x@x, ..., na.rm = na.rm): coercing argument of type 'double' to
-    ## logical
-
-    ## Warning in any(x@x, ..., na.rm = na.rm): coercing argument of type 'double' to
-    ## logical
-
-``` r
 (scores[order(scores$R1, scores$R0),])[1:5,]
 ```
 

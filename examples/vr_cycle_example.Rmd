@@ -72,7 +72,7 @@ scoresR0 <- rayleigh_selection(gg, subsample_expression, num_perms = 1000, num_c
 #### Including higher-order relations
 #### With radius=28
 ```{r}
-gg <- vr_complex(distance_matrix, 28)
+gg <- vr_complex(distance_matrix, 28, clique = TRUE)
 ```
 
 ### Show Vietoris-Rips complex

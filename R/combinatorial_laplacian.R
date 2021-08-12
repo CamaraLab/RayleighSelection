@@ -59,7 +59,7 @@ combinatorial_laplacian <- function(g2, one_forms = TRUE, weights = FALSE) {
   ## since complex$two_simplices is a list of sparse matrices, we first get the i'th indices of all the
   ## 2-simplices <i, j, k> by checking which matrices in the list are non-zero
   if (weights || one_forms) {
-    idxs <- which(lapply(g2$two_simplices, any) == TRUE, arr.ind=T)
+    idxs <- which(lapply(gg$two_simplices, function(x) any(x!=0)) == TRUE, arr.ind=T)
   }
 
   # compute weights for 1-simplices

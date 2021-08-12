@@ -1,9 +1,9 @@
 Package: RayleighSelection
 Title: An R package for feature selection in topological spaces.
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: person("Pablo G.", "Camara", email = "pcamara@upenn.edu", role = c("aut", "cre"))
-Description: RayleighSelection is an R package for feature selection in topological spaces. Features are defined as differential forms on a simplicial complex and their significance is assesed through Rayleigh quotients.
-Depends: R (>= 3.4.1)
+Description: RayleighSelection is an R package for feature selection in topological spaces. Features are defined as differential forms on a simplicial complex and their significance is assessed through Rayleigh quotients.
+Depends: R (>= 3.6)
 License: MIT
 Encoding: UTF-8
 LazyData: true

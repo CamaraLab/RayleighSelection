@@ -84,6 +84,6 @@ plot_skeleton(gg)
 #### For all genes in the expression matrix
 This will take around 1 hour to run. Decrease the number of cells to run faster.
 ```{r}
-scores <- rayleigh_selection(gg, subsample_expression, num_perms = 1000, num_cores = 8)
+scores <- rayleigh_selection(gg, subsample_expression, num_perms = 1000, num_cores = 8, one_forms = TRUE)
 (scores[order(scores$R1, scores$R0),])[1:5,]
 ```
